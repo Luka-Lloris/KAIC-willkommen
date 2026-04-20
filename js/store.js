@@ -4,7 +4,7 @@ const defaults = {
   category: '',
   categoryLabel: '',
   datetime: '',
-  transcript: '',
+  transcripts: [], // 회차별 배열
   visitor: { name: '', org: '', contact: '', email: '' }
 };
 
@@ -30,11 +30,20 @@ export function initSession(category, label) {
   const pad = n => String(n).padStart(2, '0');
   const datetime = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
   clearSession();
-  setSession({ category, categoryLabel: label, datetime });
+  setSession({ category, categoryLabel: label, datetime, transcripts: [] });
 }
 
-export function setTranscript(text) {
-  setSession({ transcript: text });
+export function addTranscript(text) {
+  const s = getSession();
+  const transcripts = [...(s.transcripts || []), text];
+  setSession({ transcripts });
+}
+
+export function updateTranscript(index, text) {
+  const s = getSession();
+  const transcripts = [...(s.transcripts || [])];
+  transcripts[index] = text;
+  setSession({ transcripts });
 }
 
 export function setVisitor(data) {
@@ -51,6 +60,12 @@ export function generateMD() {
   const s = getSession();
   const v = s.visitor;
   const vLine = [v.name, v.org, v.contact, v.email].filter(Boolean).join(' / ');
+  const transcripts = s.transcripts || [];
+
+  const body = transcripts.length === 1
+    ? transcripts[0]
+    : transcripts.map((t, i) => `### ${i + 1}회차\n\n${t}`).join('\n\n---\n\n');
+
   return `# 상담 기록
 
 **카테고리:** ${s.categoryLabel}
@@ -61,7 +76,7 @@ export function generateMD() {
 
 ## 상담 내용
 
-${s.transcript || '(내용 없음)'}
+${body || '(내용 없음)'}
 `;
 }
 
@@ -73,9 +88,9 @@ export function generateFilename() {
 }
 
 export const CAT_COLORS = {
-  verification: 'var(--cat-1)',
-  consulting:   'var(--cat-2)',
-  development:  'var(--cat-3)',
-  collaboration:'var(--cat-4)',
-  etc:          'var(--cat-5)'
+  verification:  'var(--cat-1)',
+  consulting:    'var(--cat-2)',
+  development:   'var(--cat-3)',
+  collaboration: 'var(--cat-4)',
+  etc:           'var(--cat-5)'
 };

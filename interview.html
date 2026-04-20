@@ -20,10 +20,12 @@
 
     <div class="rec-timer" id="timer">00:00</div>
 
-    <button class="rec-button idle" id="recBtn" onclick="handleRec()">
-      <span class="rec-icon" id="recIcon">⏺</span>
-      <span class="rec-label" id="recLabel">녹음 시작</span>
-    </button>
+    <!-- 동심원 버튼 -->
+    <div class="rec-ring-wrap idle" id="recWrap" onclick="handleRec()">
+      <div class="rec-ring-outer"></div>
+      <div class="rec-ring-mid"></div>
+      <div class="rec-core" id="recCore">🎙️</div>
+    </div>
 
     <p class="rec-hint" id="recHint">
       버튼을 눌러 녹음을 시작하세요<br>
@@ -34,44 +36,55 @@
 
 </div>
 
-<!-- 로딩 오버레이 -->
 <div class="loading-overlay" id="loadingOverlay">
   <div class="spinner"></div>
   <p class="loading-msg" id="loadingMsg">Whisper 모델 로딩 중...</p>
 </div>
 
 <script type="module">
-  import { getSession, setTranscript, CAT_COLORS } from './js/store.js';
+  import { getSession, addTranscript, CAT_COLORS } from './js/store.js';
 
   const session = getSession();
   if (!session.category) { location.href = 'index.html'; }
 
-  // 배지
   const badge = document.getElementById('catBadge');
   badge.textContent = session.categoryLabel;
   badge.style.background = CAT_COLORS[session.category] || 'var(--cat-5)';
 
-  // ── 상태 ──
-  let state = 'idle'; // idle | recording | processing
+  let state = 'idle';
   let mediaRecorder = null;
   let audioChunks = [];
-  let audioBlob = null;
   let timerInterval = null;
   let seconds = 0;
   let whisperPipeline = null;
   let whisperLoading = false;
 
-  // ── Whisper 사전 로드 ──
-  async function loadWhisper() {
-    if (whisperPipeline) return whisperPipeline;
-    if (whisperLoading) return null;
+  // 백그라운드 사전 로드
+  preloadWhisper();
+
+  async function preloadWhisper() {
+    if (whisperPipeline || whisperLoading) return;
     whisperLoading = true;
-    showLoading('Whisper 모델 로딩 중... (최초 1회)');
     try {
       const { pipeline } = await import(
         'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/transformers.min.js'
       );
-      whisperPipeline = await pipeline('automatic-speech-recognition', 'Xenova/whisper-base', {
+      whisperPipeline = await pipeline('automatic-speech-recognition', 'Xenova/whisper-small', {
+        language: 'korean', task: 'transcribe'
+      });
+    } catch(e) {
+      whisperLoading = false;
+    }
+  }
+
+  async function ensureWhisper() {
+    if (whisperPipeline) return whisperPipeline;
+    showLoading('Whisper 모델 로딩 중... (최초 1회, 약 466MB)');
+    try {
+      const { pipeline } = await import(
+        'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/transformers.min.js'
+      );
+      whisperPipeline = await pipeline('automatic-speech-recognition', 'Xenova/whisper-small', {
         language: 'korean', task: 'transcribe'
       });
       hideLoading();
@@ -79,15 +92,10 @@
     } catch(e) {
       hideLoading();
       alert('모델 로딩 실패: ' + e.message);
-      whisperLoading = false;
       return null;
     }
   }
 
-  // 페이지 진입 시 사전 로드 시작 (백그라운드)
-  loadWhisper();
-
-  // ── 녹음 핸들러 ──
   window.handleRec = async () => {
     if (state === 'idle') await startRec();
     else if (state === 'recording') await stopAndConvert();
@@ -109,7 +117,6 @@
   }
 
   async function stopAndConvert() {
-    if (!mediaRecorder) return;
     state = 'processing';
     setUI('processing');
     stopTimer();
@@ -120,9 +127,8 @@
       mediaRecorder.stream?.getTracks().forEach(t => t.stop());
     });
 
-    audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-
-    const pipe = await loadWhisper();
+    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+    const pipe = await ensureWhisper();
     if (!pipe) { state = 'idle'; setUI('idle'); return; }
 
     showLoading('음성 변환 중...');
@@ -137,7 +143,7 @@
         chunk_length_s: 30, stride_length_s: 5
       });
 
-      setTranscript(result.text.trim());
+      addTranscript(result.text.trim());
       hideLoading();
       location.href = 'review.html';
     } catch(e) {
@@ -148,35 +154,29 @@
     }
   }
 
-  // ── UI 상태 ──
   function setUI(s) {
-    const btn = document.getElementById('recBtn');
-    const icon = document.getElementById('recIcon');
-    const label = document.getElementById('recLabel');
+    const wrap = document.getElementById('recWrap');
+    const core = document.getElementById('recCore');
     const hint = document.getElementById('recHint');
     const timer = document.getElementById('timer');
 
-    btn.className = `rec-button ${s}`;
+    wrap.className = `rec-ring-wrap ${s}`;
 
     if (s === 'idle') {
-      icon.textContent = '⏺';
-      label.textContent = '녹음 시작';
+      core.textContent = '🎙️';
       hint.innerHTML = '버튼을 눌러 녹음을 시작하세요<br><span style="opacity:0.5;font-size:0.72rem;">상담 종료 후 다시 누르면 자동 변환됩니다</span>';
       timer.classList.remove('show');
     } else if (s === 'recording') {
-      icon.textContent = '⏹';
-      label.textContent = '상담 종료';
-      hint.innerHTML = '<span style="color:var(--danger)">녹음 중...</span><br><span style="opacity:0.5;font-size:0.72rem;">상담이 끝나면 버튼을 다시 누르세요</span>';
+      core.textContent = '⏹';
+      hint.innerHTML = '<span style="color:var(--danger);font-weight:600;">녹음 중</span><br><span style="opacity:0.5;font-size:0.72rem;">종료하려면 버튼을 다시 누르세요</span>';
       timer.classList.add('show');
     } else if (s === 'processing') {
-      icon.textContent = '⏳';
-      label.textContent = '변환 중...';
-      hint.textContent = '잠시만 기다려주세요';
+      core.textContent = '⏳';
+      hint.textContent = '음성을 텍스트로 변환하고 있습니다...';
       timer.classList.remove('show');
     }
   }
 
-  // ── 타이머 ──
   function startTimer() {
     seconds = 0;
     timerInterval = setInterval(() => {
@@ -187,11 +187,8 @@
     }, 1000);
   }
 
-  function stopTimer() {
-    clearInterval(timerInterval);
-  }
+  function stopTimer() { clearInterval(timerInterval); }
 
-  // ── 로딩 ──
   function showLoading(msg) {
     document.getElementById('loadingMsg').textContent = msg;
     document.getElementById('loadingOverlay').classList.add('show');
