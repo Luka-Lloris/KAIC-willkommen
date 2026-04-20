@@ -4,7 +4,8 @@ export async function transcribeAudio(audioBlob) {
   const config = await getConfig();
   const formData = new FormData();
   formData.append('file', audioBlob, 'recording.webm');
-  formData.append('model', 'whisper-large-v3-turbo');
+  // formData.append('model', 'whisper-large-v3-turbo');
+  formData.append('model', 'whisper-large-v3');
   formData.append('language', 'ko');
   formData.append('response_format', 'text');
 
