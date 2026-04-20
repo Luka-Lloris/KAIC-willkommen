@@ -1619,7 +1619,7 @@
       </div>
 
       <button class="save-btn" id="save-btn" onclick="saveRecord()">
-        💾 저장 (엑셀 자동 누적)
+        💾 웹DB에 저장하기
       </button>
     </div>
 
@@ -1627,8 +1627,8 @@
     <div class="side-panel">
       <div class="side-card">
         <div class="side-card-title">📁 저장 경로</div>
-        <div class="path-display">상담 저장 시 즉시 엑셀 다운로드<br>하루 끝나면 전체 다운로드 권장</div>
-        <div style="font-size:14.3px;color:var(--red);font-weight:600;margin-top:8px;line-height:1.5;">⚠ 창을 닫기 전 반드시 전체 다운로드!</div>
+        <div class="path-display">웹DB 저장 시 방선임에게 요청<br>녹음 버전 별도 요청</div>
+        <div style="font-size:14.3px;color:var(--blue);font-weight:600;margin-top:8px;line-height:1.5;">⚠ 녹음파일 메일전송 베타테스트중</div>
       </div>
 
       <div class="side-card" style="flex:1;overflow:hidden;display:flex;flex-direction:column;">
@@ -1639,9 +1639,9 @@
       </div>
 
       <div class="side-card">
-        <div class="side-card-title">📥 JSON 백업 다운로드</div>
+        <div class="side-card-title">📥 JSON 백업</div>
         <button onclick="downloadXLSX(true)" style="width:100%;background:var(--navy);border:none;border-radius:8px;padding:10px;font-family:'Noto Sans KR',sans-serif;font-size:16.9px;font-weight:700;color:var(--white);cursor:pointer;">
-          📥 전체 기록 엑셀 다운로드
+          📥 엑셀 다운로드(로컬 : 비권장)
         </button>
       </div>
     </div>
