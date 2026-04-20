@@ -1,17 +1,17 @@
-const RESEND_API_KEY = 're_SAJQ6mGa_Jy7viXH83Nd5HGP1CdtiGxWZ';
-const RESEND_TO      = 'kaic.officer@gmail.com';
-const RESEND_FROM    = 'onboarding@resend.dev'; // 내일 noreply@aicerti.com 으로 변경
+import { getConfig } from './config.js';
 
 export async function sendEmail({ subject, markdown, filename }) {
+  const config = await getConfig();
+
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${RESEND_API_KEY}`,
+      'Authorization': `Bearer ${config.resend_api_key}`,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      from: RESEND_FROM,
-      to: [RESEND_TO],
+      from: config.resend_from,
+      to: [config.resend_to],
       subject,
       html: toHtml(markdown),
       attachments: [{

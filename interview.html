@@ -20,7 +20,6 @@
 
     <div class="rec-timer" id="timer">00:00</div>
 
-    <!-- 동심원 버튼 -->
     <div class="rec-ring-wrap idle" id="recWrap" onclick="handleRec()">
       <div class="rec-ring-outer"></div>
       <div class="rec-ring-mid"></div>
@@ -38,11 +37,12 @@
 
 <div class="loading-overlay" id="loadingOverlay">
   <div class="spinner"></div>
-  <p class="loading-msg" id="loadingMsg">Whisper 모델 로딩 중...</p>
+  <p class="loading-msg" id="loadingMsg">변환 중...</p>
 </div>
 
 <script type="module">
   import { getSession, addTranscript, CAT_COLORS } from './js/store.js';
+  import { transcribeAudio } from './js/groq.js';
 
   const session = getSession();
   if (!session.category) { location.href = 'index.html'; }
@@ -56,45 +56,6 @@
   let audioChunks = [];
   let timerInterval = null;
   let seconds = 0;
-  let whisperPipeline = null;
-  let whisperLoading = false;
-
-  // 백그라운드 사전 로드
-  preloadWhisper();
-
-  async function preloadWhisper() {
-    if (whisperPipeline || whisperLoading) return;
-    whisperLoading = true;
-    try {
-      const { pipeline } = await import(
-        'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/transformers.min.js'
-      );
-      whisperPipeline = await pipeline('automatic-speech-recognition', 'Xenova/whisper-small', {
-        language: 'korean', task: 'transcribe'
-      });
-    } catch(e) {
-      whisperLoading = false;
-    }
-  }
-
-  async function ensureWhisper() {
-    if (whisperPipeline) return whisperPipeline;
-    showLoading('Whisper 모델 로딩 중... (최초 1회, 약 466MB)');
-    try {
-      const { pipeline } = await import(
-        'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/transformers.min.js'
-      );
-      whisperPipeline = await pipeline('automatic-speech-recognition', 'Xenova/whisper-small', {
-        language: 'korean', task: 'transcribe'
-      });
-      hideLoading();
-      return whisperPipeline;
-    } catch(e) {
-      hideLoading();
-      alert('모델 로딩 실패: ' + e.message);
-      return null;
-    }
-  }
 
   window.handleRec = async () => {
     if (state === 'idle') await startRec();
@@ -128,22 +89,11 @@
     });
 
     const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-    const pipe = await ensureWhisper();
-    if (!pipe) { state = 'idle'; setUI('idle'); return; }
 
     showLoading('음성 변환 중...');
     try {
-      const arrayBuffer = await audioBlob.arrayBuffer();
-      const ctx = new AudioContext({ sampleRate: 16000 });
-      const decoded = await ctx.decodeAudioData(arrayBuffer);
-      const float32 = decoded.getChannelData(0);
-
-      const result = await pipe(float32, {
-        language: 'korean', task: 'transcribe',
-        chunk_length_s: 30, stride_length_s: 5
-      });
-
-      addTranscript(result.text.trim());
+      const text = await transcribeAudio(audioBlob);
+      addTranscript(text.trim());
       hideLoading();
       location.href = 'review.html';
     } catch(e) {
@@ -181,8 +131,8 @@
     seconds = 0;
     timerInterval = setInterval(() => {
       seconds++;
-      const m = String(Math.floor(seconds/60)).padStart(2,'0');
-      const s = String(seconds%60).padStart(2,'0');
+      const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+      const s = String(seconds % 60).padStart(2, '0');
       document.getElementById('timer').textContent = `${m}:${s}`;
     }, 1000);
   }
