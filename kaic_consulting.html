@@ -1,0 +1,1957 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>AIFORUS — KAIC 컨설팅 가이드</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --navy: #0B1D3A;
+    --blue: #1656C1;
+    --sky: #3B82F6;
+    --accent: #00C2FF;
+    --white: #FFFFFF;
+    --gray-50: #F8FAFC;
+    --gray-100: #EFF3F8;
+    --gray-300: #CBD5E1;
+    --gray-500: #64748B;
+    --gray-700: #334155;
+    --green: #10B981;
+    --orange: #F59E0B;
+    --red: #EF4444;
+    --slide-w: 1920px;
+    --slide-h: 1080px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: #1a1a2e;
+    font-family: 'Noto Sans KR', sans-serif;
+    overflow: hidden;
+  }
+
+  /* ── VIEWPORT SCALER ── */
+  #scaler {
+    position: fixed;
+    top: 0; left: 0;
+    width: var(--slide-w);
+    height: var(--slide-h);
+    transform-origin: top left;
+  }
+
+  /* ── SLIDE CONTAINER ── */
+  #slides {
+    width: var(--slide-w);
+    height: var(--slide-h);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    width: var(--slide-w);
+    height: var(--slide-h);
+    display: none;
+    flex-direction: column;
+    background: var(--gray-50);
+  }
+  .slide.active { display: flex; }
+
+  /* ── NAV ── */
+  #nav {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(11,29,58,0.92);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 40px;
+    padding: 10px 24px;
+    backdrop-filter: blur(12px);
+  }
+  .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.3);
+    cursor: pointer;
+    transition: all .25s;
+  }
+  .dot.on { background: var(--accent); width: 24px; border-radius: 4px; }
+  .nav-btn {
+    background: none; border: none; cursor: pointer;
+    color: rgba(255,255,255,0.7);
+    font-size: 18px; padding: 2px 8px;
+    transition: color .2s;
+  }
+  .nav-btn:hover { color: var(--accent); }
+  .nav-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    min-width: 48px;
+    text-align: center;
+  }
+
+  /* ── SHARED LAYOUT ── */
+  .slide-inner {
+    width: 100%; height: 100%;
+    flex-direction: column;
+  }
+
+  /* TOP BAR */
+  .topbar {
+    height: 64px;
+    background: var(--navy);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 56px;
+    flex-shrink: 0;
+  }
+  .topbar-left {
+    display: flex; align-items: center; gap: 20px;
+  }
+  .kaic-logo {
+    font-size: 20px; font-weight: 900;
+    color: var(--white);
+    letter-spacing: -0.5px;
+  }
+  .kaic-logo span { color: var(--accent); }
+  .divider-v {
+    width: 1px; height: 24px;
+    background: rgba(255,255,255,0.2);
+  }
+  .topbar-sub {
+    font-size: 18px; font-weight: 400;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 0.3px;
+  }
+  .slide-title-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    background: rgba(0,194,255,0.12);
+    border: 1px solid rgba(0,194,255,0.3);
+    border-radius: 4px;
+    padding: 4px 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* ── PLACEHOLDER ── */
+  .ph {
+    border: 1.5px solid #1a1a1a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #1a1a1a;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: 'DM Mono', monospace;
+    background: transparent;
+  }
+
+  /* ── BADGE / TAG ── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 4px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+  .badge-blue { background: rgba(22,86,193,0.1); color: var(--blue); border: 1px solid rgba(22,86,193,0.25); }
+  .badge-green { background: rgba(16,185,129,0.1); color: var(--green); border: 1px solid rgba(16,185,129,0.25); }
+  .badge-orange { background: rgba(245,158,11,0.1); color: var(--orange); border: 1px solid rgba(245,158,11,0.3); }
+  .badge-sky { background: rgba(0,194,255,0.08); color: var(--accent); border: 1px solid rgba(0,194,255,0.25); }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--white);
+    border-radius: 12px;
+    border: 1px solid var(--gray-100);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+
+  /* ── SECTION LABEL ── */
+  .sec-label {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--gray-500);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  /* ══════════════════════════════
+     SLIDE 1 — AIFORUS-CLT+
+  ══════════════════════════════ */
+  #s1 { background: var(--gray-50); }
+  #s1 .body {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 560px 1fr;
+    gap: 0;
+    overflow: hidden;
+  }
+
+  /* LEFT PANEL */
+  .s1-left {
+    background: var(--navy);
+    padding: 52px 44px;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  .s1-left::after {
+    content: '';
+    position: absolute;
+    bottom: -80px; right: -80px;
+    width: 280px; height: 280px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,194,255,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .s1-brand {
+    font-size: 32px;
+    font-weight: 900;
+    color: var(--white);
+    letter-spacing: -1px;
+    line-height: 1.1;
+  }
+  .s1-brand em {
+    font-style: normal;
+    color: var(--accent);
+  }
+  .s1-desc {
+    font-size: 21px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.65);
+    line-height: 1.75;
+  }
+  .s1-ph-logo {
+    width: 100%;
+    height: 120px;
+    margin-bottom: 4px;
+  }
+  .stat-row {
+    display: flex;
+    gap: 20px;
+  }
+  .stat-box {
+    flex: 1;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .stat-num {
+    font-size: 40px;
+    font-weight: 900;
+    color: var(--accent);
+    letter-spacing: -1px;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .stat-label {
+    font-size: 16px;
+    color: rgba(255,255,255,0.45);
+    font-weight: 400;
+  }
+  .tag-row {
+    display: flex; flex-wrap: wrap; gap: 8px;
+  }
+  .tag {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(0,194,255,0.35);
+    color: var(--accent);
+    background: rgba(0,194,255,0.08);
+  }
+
+  /* RIGHT PANEL */
+  .s1-right {
+    padding: 44px 52px;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    overflow: hidden;
+  }
+  .s1-right-top {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+  }
+  .feat-card {
+    background: var(--white);
+    border-radius: 12px;
+    border: 1px solid var(--gray-100);
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    position: relative;
+    overflow: hidden;
+  }
+  .feat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--blue);
+  }
+  .feat-icon {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    background: rgba(22,86,193,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+  }
+  .feat-name {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--navy);
+  }
+  .feat-mono {
+    font-family: 'DM Mono', monospace;
+    font-size: 15px;
+    color: var(--sky);
+    font-weight: 500;
+  }
+  .feat-desc {
+    font-size: 18px;
+    color: var(--gray-500);
+    line-height: 1.6;
+    flex: 1;
+  }
+
+  /* ONBOARDING FLOW */
+  .flow-row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: var(--white);
+    border-radius: 12px;
+    border: 1px solid var(--gray-100);
+    padding: 24px 32px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .flow-step {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: center;
+    text-align: center;
+  }
+  .flow-num {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--navy);
+    color: var(--white);
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 2px;
+  }
+  .flow-name {
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--navy);
+  }
+  .flow-detail {
+    font-size: 16px;
+    color: var(--gray-500);
+    line-height: 1.5;
+  }
+  .flow-arrow {
+    font-size: 18px;
+    color: var(--gray-300);
+    padding: 0 8px;
+    flex-shrink: 0;
+  }
+  .flow-result {
+    background: rgba(22,86,193,0.06);
+    border: 1.5px dashed var(--blue);
+    border-radius: 10px;
+    padding: 16px 28px;
+    text-align: center;
+    flex-shrink: 0;
+    min-width: 200px;
+  }
+  .flow-result-main {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--blue);
+  }
+  .flow-result-sub {
+    font-size: 11px;
+    color: var(--gray-500);
+    margin-top: 3px;
+  }
+
+  /* SCORING BAR */
+  .scoring-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .scoring-card {
+    background: var(--white);
+    border-radius: 12px;
+    border: 1px solid var(--gray-100);
+    padding: 24px 28px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .scoring-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .score-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .score-label {
+    font-size: 17px;
+    color: var(--gray-700);
+    width: 110px;
+    flex-shrink: 0;
+  }
+  .score-bar-wrap {
+    flex: 1;
+    height: 8px;
+    background: var(--gray-100);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .score-bar {
+    height: 100%;
+    border-radius: 4px;
+    background: var(--blue);
+  }
+  .score-pct {
+    font-family: 'DM Mono', monospace;
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--navy);
+    width: 32px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  /* DEPLOY */
+  .deploy-card {
+    background: var(--white);
+    border-radius: 12px;
+    border: 1px solid var(--gray-100);
+    padding: 24px 28px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .deploy-opt {
+    border: 1.5px solid var(--gray-300);
+    border-radius: 10px;
+    padding: 18px 20px;
+    cursor: default;
+    position: relative;
+  }
+  .deploy-opt.recommended { border-color: var(--blue); }
+  .deploy-rec-tag {
+    position: absolute;
+    top: -10px; right: 14px;
+    background: var(--blue);
+    color: var(--white);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 3px;
+  }
+  .deploy-opt-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 6px;
+  }
+  .deploy-opt-sub {
+    font-size: 12px;
+    color: var(--gray-500);
+    line-height: 1.55;
+  }
+
+  /* ══════════════════════════════
+     SLIDE 2 — CLT 엔진 (B2B)
+  ══════════════════════════════ */
+  #s2 { background: var(--gray-50); }
+  #s2 .body {
+    flex: 1;
+    padding: 40px 56px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    overflow: hidden;
+  }
+  .s2-top {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  /* Pipeline */
+  .pipeline-card {
+    background: var(--white);
+    border-radius: 12px;
+    border: 1px solid var(--gray-100);
+    padding: 28px 32px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  }
+  .pipeline-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+  .pipe-step {
+    background: var(--navy);
+    color: var(--white);
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .pipe-arrow {
+    color: var(--gray-300);
+    font-size: 14px;
+    padding: 0 2px;
+  }
+
+  /* Tech stack */
+  .stack-card {
+    background: var(--white);
+    border-radius: 12px;
+    border: 1px solid var(--gray-100);
+    padding: 28px 32px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  }
+  .stack-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--gray-100);
+  }
+  .stack-row:last-child { border-bottom: none; }
+  .stack-layer {
+    font-family: 'DM Mono', monospace;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--gray-500);
+    width: 100px;
+    flex-shrink: 0;
+  }
+  .stack-items {
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+  .stack-tag {
+    font-size: 15px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 4px;
+    background: var(--gray-100);
+    color: var(--gray-700);
+    border: 1px solid var(--gray-300);
+  }
+  .stack-tag.hi {
+    background: rgba(22,86,193,0.08);
+    color: var(--blue);
+    border-color: rgba(22,86,193,0.2);
+  }
+
+  .s2-bottom {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 24px;
+    flex: 1;
+  }
+  .addon-card {
+    background: var(--white);
+    border-radius: 12px;
+    border: 1px solid var(--gray-100);
+    padding: 28px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  }
+  .addon-title {
+    font-size: 21px;
+    font-weight: 700;
+    color: var(--navy);
+  }
+  .addon-desc {
+    font-size: 18px;
+    color: var(--gray-500);
+    line-height: 1.65;
+    flex: 1;
+  }
+  .kv-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .kv-key {
+    font-size: 16px;
+    color: var(--gray-500);
+    width: 72px;
+    flex-shrink: 0;
+  }
+  .kv-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 17px;
+    color: var(--navy);
+    font-weight: 500;
+  }
+
+  /* ══════════════════════════════
+     SLIDE 3 — 솔루션 라인업
+  ══════════════════════════════ */
+  #s3 { background: var(--gray-50); }
+  #s3 .body {
+    flex: 1;
+    padding: 40px 56px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    overflow: hidden;
+  }
+  .lineup-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    flex: 1;
+  }
+  .lineup-card {
+    background: var(--white);
+    border-radius: 14px;
+    border: 1px solid var(--gray-100);
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    position: relative;
+    overflow: hidden;
+  }
+  .lineup-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+  }
+  .lc-gix::before { background: #3B82F6; }
+  .lc-vis::before { background: #10B981; }
+  .lc-aid::before { background: #8B5CF6; }
+  .lc-oot::before { background: #F59E0B; }
+
+  .lineup-name {
+    font-size: 32px;
+    font-weight: 900;
+    color: var(--navy);
+    letter-spacing: -0.5px;
+  }
+  .lineup-fullname {
+    font-size: 16px;
+    color: var(--gray-500);
+    line-height: 1.4;
+    margin-top: -8px;
+  }
+  .lineup-desc {
+    font-size: 18px;
+    color: var(--gray-700);
+    line-height: 1.7;
+    flex: 1;
+  }
+  .lineup-metric {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border-top: 1px solid var(--gray-100);
+    padding-top: 14px;
+  }
+  .metric-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .metric-label { font-size: 16px; color: var(--gray-500); }
+  .metric-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--navy);
+  }
+  .lineup-targets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .lt {
+    font-size: 15px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: var(--gray-100);
+    color: var(--gray-700);
+  }
+
+  /* ══════════════════════════════
+     SLIDE 4 — 상담 입력
+  ══════════════════════════════ */
+  #s4 { background: var(--gray-50); }
+  #s4 .body {
+    flex: 1;
+    padding: 36px 56px;
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 28px;
+    overflow: hidden;
+  }
+
+  .form-area {
+    background: var(--white);
+    border-radius: 14px;
+    border: 1px solid var(--gray-100);
+    padding: 36px 40px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
+  }
+  .form-title {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--navy);
+    margin-bottom: 4px;
+  }
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .form-group.full { grid-column: 1 / -1; }
+  .form-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--gray-700);
+    letter-spacing: 0.03em;
+  }
+  .form-label span { color: var(--red); margin-left: 2px; }
+  .form-input, .form-textarea, .form-select {
+    border: 1.5px solid var(--gray-300);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 13px;
+    color: var(--navy);
+    background: var(--white);
+    transition: border-color .2s;
+    outline: none;
+    width: 100%;
+  }
+  .form-input:focus, .form-textarea:focus, .form-select:focus {
+    border-color: var(--blue);
+  }
+  .form-textarea { resize: none; height: 100px; line-height: 1.6; }
+  .keyword-wrap {
+    border: 1.5px solid var(--gray-300);
+    border-radius: 8px;
+    padding: 8px 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    min-height: 44px;
+    cursor: text;
+  }
+  .keyword-wrap:focus-within { border-color: var(--blue); }
+  .kw-chip {
+    background: var(--navy);
+    color: var(--white);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .kw-chip .kw-x {
+    cursor: pointer;
+    opacity: .6;
+    font-size: 13px;
+    line-height: 1;
+  }
+  .kw-input {
+    border: none; outline: none;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 13px;
+    color: var(--navy);
+    min-width: 80px;
+    flex: 1;
+    background: transparent;
+  }
+
+  .service-check-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .svc-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1.5px solid var(--gray-300);
+    border-radius: 8px;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: all .15s;
+    user-select: none;
+  }
+  .svc-check:has(input:checked) {
+    border-color: var(--blue);
+    background: rgba(22,86,193,0.05);
+  }
+  .svc-check input { display: none; }
+  .svc-check-box {
+    width: 16px; height: 16px;
+    border-radius: 4px;
+    border: 1.5px solid var(--gray-300);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 10px;
+    color: transparent;
+    transition: all .15s;
+  }
+  .svc-check:has(input:checked) .svc-check-box {
+    background: var(--blue);
+    border-color: var(--blue);
+    color: white;
+  }
+  .svc-check-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--gray-700);
+  }
+
+  .save-btn {
+    background: var(--blue);
+    color: var(--white);
+    border: none;
+    border-radius: 10px;
+    padding: 14px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .2s, transform .1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .save-btn:hover { background: #1248a3; }
+  .save-btn:active { transform: scale(0.99); }
+  .save-btn:disabled { background: var(--gray-300); cursor: not-allowed; }
+
+  /* SIDE PANEL */
+  .side-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .side-card {
+    background: var(--white);
+    border-radius: 12px;
+    border: 1px solid var(--gray-100);
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .side-card-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .record-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--gray-100);
+    gap: 12px;
+  }
+  .record-item:last-child { border-bottom: none; }
+  .record-org { font-size: 13px; font-weight: 600; color: var(--navy); }
+  .record-time {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--gray-500);
+    white-space: nowrap;
+    margin-top: 2px;
+  }
+  .record-svc { font-size: 11px; color: var(--sky); margin-top: 2px; }
+  .path-display {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--gray-500);
+    background: var(--gray-50);
+    border: 1px solid var(--gray-100);
+    border-radius: 6px;
+    padding: 10px 12px;
+    word-break: break-all;
+    line-height: 1.5;
+  }
+  .toast {
+    position: fixed;
+    bottom: 80px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--navy);
+    color: var(--white);
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    opacity: 0;
+    pointer-events: none;
+    transition: all .3s;
+    z-index: 99999;
+    white-space: nowrap;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 99990;
+    background: rgba(11,29,58,0.75);
+    backdrop-filter: blur(6px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: var(--white);
+    border-radius: 20px;
+    padding: 48px 52px;
+    width: 760px;
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.25);
+    animation: modalIn .22s ease;
+  }
+  @keyframes modalIn {
+    from { opacity:0; transform:translateY(16px) scale(.97); }
+    to   { opacity:1; transform:translateY(0) scale(1); }
+  }
+  .modal-close {
+    position: absolute; top:20px; right:24px;
+    background: var(--gray-100); border: none;
+    width:36px; height:36px; border-radius:50%;
+    font-size:27.0px; cursor:pointer; color:var(--gray-500);
+    display:flex; align-items:center; justify-content:center;
+    transition: background .15s;
+  }
+  .modal-close:hover { background: var(--gray-300); }
+  .modal-tag { display:inline-block; margin-bottom:16px; }
+  .modal-name { font-size:54.0px; font-weight:900; color:var(--navy); letter-spacing:-1px; margin-bottom:4px; }
+  .modal-fullname { font-size:19.5px; color:var(--gray-500); margin-bottom:20px; }
+  .modal-desc { font-size:22.5px; color:var(--gray-700); line-height:1.8; margin-bottom:24px; }
+  .modal-section { margin-bottom:20px; }
+  .modal-section-title { font-size:18.0px; font-weight:700; color:var(--gray-500); letter-spacing:.1em; text-transform:uppercase; margin-bottom:10px; }
+  .modal-kv { display:flex; gap:0; flex-direction:column; }
+  .modal-kv-row { display:flex; padding:9px 0; border-bottom:1px solid var(--gray-100); gap:16px; }
+  .modal-kv-row:last-child { border-bottom:none; }
+  .modal-kv-key { font-size:19.5px; color:var(--gray-500); width:140px; flex-shrink:0; }
+  .modal-kv-val { font-size:19.5px; color:var(--navy); font-weight:500; }
+  .modal-targets { display:flex; flex-wrap:wrap; gap:8px; }
+  .modal-target { font-size:18.0px; font-weight:600; padding:5px 12px; border-radius:20px; background:var(--gray-100); color:var(--gray-700); }
+  .lineup-card { cursor:pointer; transition:box-shadow .2s, transform .15s; }
+  .lineup-card:hover { box-shadow:0 8px 32px rgba(0,0,0,0.12); transform:translateY(-2px); }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<div id="nav">
+  <button class="nav-btn" onclick="go(-1)">◀</button>
+  <div id="dots"></div>
+  <div class="nav-label" id="nav-label">1 / 4</div>
+  <button class="nav-btn" onclick="go(1)">▶</button>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<!-- SCALER -->
+<div id="scaler">
+<div id="slides">
+
+<!-- ══════════ SLIDE 1: CLT+ ══════════ -->
+<div class="slide active" id="s1">
+  <div class="topbar">
+    <div class="topbar-left">
+      <img src="https://raw.githubusercontent.com/Luka-Lloris/AIFORUS-CLT/main/assets/logo_kaic_grayscale.png" style="height:36px;object-fit:contain;">
+      <div class="divider-v"></div>
+      <div class="topbar-sub">한국인공지능검증원</div>
+    </div>
+    <div class="slide-title-tag">AIFORUS-CLT+ / 핵심 서비스</div>
+  </div>
+  <div class="body">
+    <!-- LEFT -->
+    <div class="s1-left">
+      
+      <div>
+        <div class="s1-brand">AIFORUS<br><em>CLT+</em></div>
+        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+          <span class="badge badge-sky">SaaS</span>
+          <span class="badge badge-green">완성형 서비스</span>
+        </div>
+      </div>
+      <div class="s1-desc">
+        중소기업·소상공인·창업자를 위한<br>
+        <strong style="color:var(--white);">AI 기반 정부지원사업 통합 추천 플랫폼</strong><br><br>
+        수십 개 포털을 매일 뒤지는 대신,<br>
+        AI가 기업 프로필 기반으로 알아서 추천
+      </div>
+      <div class="stat-row">
+        <div class="stat-box">
+          <div class="stat-num">20+</div>
+          <div class="stat-label">정부 데이터소스</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num">70+</div>
+          <div class="stat-label">뉴스 소스</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num">6</div>
+          <div class="stat-label">로컬 AI 모델</div>
+        </div>
+      </div>
+      <div class="tag-row">
+        <span class="tag">#정부지원사업</span>
+        <span class="tag">#AI추천</span>
+        <span class="tag">#중소기업</span>
+        <span class="tag">#소상공인</span>
+        <span class="tag">#창업자</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px;">
+        <a id="clt-plus-btn" href="https://celery-doubling-impound.ngrok-free.dev" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;background:var(--accent);color:var(--navy);font-size:14px;font-weight:800;padding:13px;border-radius:10px;text-decoration:none;letter-spacing:-0.3px;" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+          ↗ CLT+ 바로가기
+        </a>
+        <a href="https://aicerti.co.kr" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:var(--white);font-size:13px;font-weight:600;padding:11px;border-radius:10px;text-decoration:none;" onmouseover="this.style.opacity='.75'" onmouseout="this.style.opacity='1'">
+          🌐 CLT (글로벌 AI 뉴스 인텔리전스)
+        </a>
+        <a href="https://aicerti.com" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.7);font-size:12px;font-weight:600;padding:10px;border-radius:10px;text-decoration:none;" onmouseover="this.style.opacity='.75'" onmouseout="this.style.opacity='1'">
+          🏢 KAIC 한국인공지능검증원
+        </a>
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="s1-right">
+      <!-- 3대 기능 -->
+      <div class="s1-right-top">
+        <div class="feat-card">
+          <div class="feat-icon">🔄</div>
+          <div class="feat-mono">Auto-Aggregation</div>
+          <div class="feat-name">자동 수집</div>
+          <div class="feat-desc">정부 소스 20개 + 뉴스 70개 이상을 실시간 통합 수집·분류. 직접 검색 불필요.</div>
+        </div>
+        <div class="feat-card">
+          <div class="feat-icon">🎯</div>
+          <div class="feat-mono">AI Hybrid Scoring</div>
+          <div class="feat-name">맞춤 추천</div>
+          <div class="feat-desc">시맨틱 유사도·규칙·최신성·학습 4종 하이브리드 스코어링으로 기업 프로필 기반 개인화.</div>
+        </div>
+        <div class="feat-card">
+          <div class="feat-icon">📊</div>
+          <div class="feat-mono">One Dashboard</div>
+          <div class="feat-name">하나의 화면</div>
+          <div class="feat-desc">AI 추천 점수(%), 지원금액, 마감일을 대시보드 하나에서 확인. D-Day 알림 포함.</div>
+        </div>
+      </div>
+
+      <!-- 온보딩 플로우 -->
+      <div class="flow-row">
+        <div class="flow-step">
+          <div class="flow-num">1</div>
+          <div class="flow-name">회사 정보</div>
+          <div class="flow-detail">업종·제품단계<br>성장단계·연매출</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="flow-num">2</div>
+          <div class="flow-name">지역 설정</div>
+          <div class="flow-detail">본사·연구소<br>소재지</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="flow-num">3</div>
+          <div class="flow-name">관심사</div>
+          <div class="flow-detail">키워드 선택<br>희망 지원금 범위</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-result">
+          <div class="flow-result-main">✓ AI 추천 즉시 시작</div>
+          <div class="flow-result-sub">건너뛰기로 최소 입력 후 나중에 보완 가능</div>
+        </div>
+      </div>
+
+      <!-- 스코어링 + 도입방식 -->
+      <div class="scoring-row">
+        <div class="scoring-card">
+          <div class="scoring-title">📐 Hybrid Scoring 구성</div>
+          <div class="score-item">
+            <div class="score-label">시맨틱 유사도</div>
+            <div class="score-bar-wrap"><div class="score-bar" style="width:40%;background:#1656C1;"></div></div>
+            <div class="score-pct">40%</div>
+          </div>
+          <div class="score-item">
+            <div class="score-label">규칙 기반</div>
+            <div class="score-bar-wrap"><div class="score-bar" style="width:35%;background:#3B82F6;"></div></div>
+            <div class="score-pct">35%</div>
+          </div>
+          <div class="score-item">
+            <div class="score-label">최신성</div>
+            <div class="score-bar-wrap"><div class="score-bar" style="width:15%;background:#60A5FA;"></div></div>
+            <div class="score-pct">15%</div>
+          </div>
+          <div class="score-item">
+            <div class="score-label">상호작용 학습</div>
+            <div class="score-bar-wrap"><div class="score-bar" style="width:10%;background:#93C5FD;"></div></div>
+            <div class="score-pct">10%</div>
+          </div>
+        </div>
+
+        <div class="deploy-card">
+          <div class="deploy-opt recommended">
+            <div class="deploy-rec-tag">바로 사용</div>
+            <div class="deploy-opt-title">☁ SaaS 구독</div>
+            <div class="deploy-opt-sub">가입 후 즉시 사용.<br>별도 개발·설치 없음.<br>중소기업·소상공인 직접 이용.</div>
+          </div>
+          <div class="deploy-opt">
+            <div class="deploy-opt-title">🔌 API / 애드온 연동</div>
+            <div class="deploy-opt-sub">기관 기존 시스템·포털 안에<br>CLT 엔진을 붙이는 방식.<br>커스텀 파이프라인 구성 가능.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ SLIDE 2: CLT 엔진 ══════════ -->
+<div class="slide" id="s2">
+  <div class="topbar">
+    <div class="topbar-left">
+      <img src="https://raw.githubusercontent.com/Luka-Lloris/AIFORUS-CLT/main/assets/logo_kaic_grayscale.png" style="height:36px;object-fit:contain;">
+      <div class="divider-v"></div>
+      <div class="topbar-sub">한국인공지능검증원</div>
+    </div>
+    <div class="slide-title-tag">AIFORUS-CLT / B2B 엔진 연동</div>
+  </div>
+  <div class="body">
+    <div class="s2-top">
+      <!-- 파이프라인 -->
+      <div class="pipeline-card">
+        <div class="sec-label">처리 파이프라인</div>
+        <div style="font-size:14px;font-weight:700;color:var(--navy);">AIFORUS-CLT 엔진</div>
+        <div style="font-size:12px;color:var(--gray-500);margin-top:4px;line-height:1.6;">비정형 콘텐츠를 수집·정제·구조화하는 AI 파이프라인.<br>CLT+의 기반 엔진이자 독립 B2B 기술 솔루션.</div>
+        <div class="pipeline-row">
+          <div class="pipe-step">Multi-source<br>Ingestion</div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-step">Parsing &<br>Normalization</div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-step">Dedup<br>Engine</div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-step">Embedding<br>Layer</div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-step">SCR<br>의미 정제</div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-step">Topic<br>Structuring</div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-step">Structured<br>DB Storage</div>
+        </div>
+        <div style="margin-top:20px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+          <div style="text-align:center;padding:12px;background:var(--gray-50);border-radius:8px;border:1px solid var(--gray-100);">
+            <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--navy);">15~30분</div>
+            <div style="font-size:11px;color:var(--gray-500);margin-top:3px;">뉴스 갱신 주기</div>
+          </div>
+          <div style="text-align:center;padding:12px;background:var(--gray-50);border-radius:8px;border:1px solid var(--gray-100);">
+            <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--navy);">768dim</div>
+            <div style="font-size:11px;color:var(--gray-500);margin-top:3px;">벡터 임베딩</div>
+          </div>
+          <div style="text-align:center;padding:12px;background:var(--gray-50);border-radius:8px;border:1px solid var(--gray-100);">
+            <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--navy);">$0</div>
+            <div style="font-size:11px;color:var(--gray-500);margin-top:3px;">외부 API 비용</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 기술 스택 -->
+      <div class="stack-card">
+        <div class="sec-label">기술 스택</div>
+        <div class="stack-row">
+          <div class="stack-layer">Frontend</div>
+          <div class="stack-items">
+            <span class="stack-tag hi">React 19</span>
+            <span class="stack-tag hi">Vite</span>
+            <span class="stack-tag hi">Tailwind CSS</span>
+            <span class="stack-tag">SPA</span>
+          </div>
+        </div>
+        <div class="stack-row">
+          <div class="stack-layer">API</div>
+          <div class="stack-items">
+            <span class="stack-tag hi">FastAPI</span>
+            <span class="stack-tag">Python 3.11</span>
+            <span class="stack-tag">REST</span>
+            <span class="stack-tag">비동기</span>
+          </div>
+        </div>
+        <div class="stack-row">
+          <div class="stack-layer">AI / NLP</div>
+          <div class="stack-items">
+            <span class="stack-tag hi">KoSimCSE</span>
+            <span class="stack-tag hi">XLM-RoBERTa</span>
+            <span class="stack-tag hi">KoELECTRA</span>
+            <span class="stack-tag">fastText</span>
+            <span class="stack-tag">PyTorch</span>
+            <span class="stack-tag">HuggingFace</span>
+          </div>
+        </div>
+        <div class="stack-row">
+          <div class="stack-layer">Database</div>
+          <div class="stack-items">
+            <span class="stack-tag hi">PostgreSQL 16</span>
+            <span class="stack-tag hi">pgvector</span>
+            <span class="stack-tag">768차원 벡터 검색</span>
+          </div>
+        </div>
+        <div class="stack-row">
+          <div class="stack-layer">Infra</div>
+          <div class="stack-items">
+            <span class="stack-tag hi">Docker</span>
+            <span class="stack-tag">docker-compose</span>
+            <span class="stack-tag">컨테이너 독립 배포</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 연동 방식 -->
+    <div class="s2-bottom" style="grid-template-columns:repeat(2,1fr);grid-template-rows:1fr 1fr;">
+      <div class="addon-card">
+        <span class="badge badge-blue" style="align-self:flex-start;">연동 방식 ①</span>
+        <div class="addon-title" style="font-size:17px;">기존 시스템 애드온</div>
+        <div class="addon-desc" style="font-size:14px;">현재 운영 중인 포털·인트라넷에 CLT 엔진을 Add-on으로 연결. 기존 DB 스키마 매핑 가능. 외부 AI API 비용 없음.</div>
+        <div style="background:var(--gray-50);border:1px solid var(--gray-100);border-radius:10px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:4px;">
+          <div style="text-align:center;flex:1;">
+            <div style="font-size:13px;font-weight:700;color:var(--navy);">기존 포털 수동 검색</div>
+            <div style="font-size:11px;color:var(--gray-500);margin-top:3px;">매일 반복</div>
+          </div>
+<div style="color:var(--blue);font-size:18px;flex-shrink:0;font-weight:700;">→</div>
+<div style="text-align:center;flex:1;">
+            <div style="font-size:13px;font-weight:700;color:var(--navy);">CLT 엔진 Add-on</div>
+            <div style="font-size:11px;color:var(--gray-500);margin-top:3px;">API 연결</div>
+          </div>
+<div style="color:var(--blue);font-size:18px;flex-shrink:0;font-weight:700;">→</div>
+<div style="text-align:center;flex:1;">
+            <div style="font-size:13px;font-weight:700;color:var(--navy);">자동 수집·분류</div>
+            <div style="font-size:11px;color:var(--gray-500);margin-top:3px;">20개 소스</div>
+          </div>
+<div style="color:var(--blue);font-size:18px;flex-shrink:0;font-weight:700;">→</div>
+<div style="text-align:center;flex:1;">
+            <div style="font-size:13px;font-weight:700;color:var(--navy);">AI 추천 결과</div>
+            <div style="font-size:11px;color:var(--gray-500);margin-top:3px;">맞춤 스코어링</div>
+          </div>
+<div style="color:var(--blue);font-size:18px;flex-shrink:0;font-weight:700;">→</div>
+<div style="text-align:center;flex:1;">
+            <div style="font-size:13px;font-weight:700;color:var(--navy);">기존 화면 표시</div>
+            <div style="font-size:11px;color:var(--gray-500);margin-top:3px;">즉시 적용</div>
+          </div>
+        </div>
+      </div>
+      <div class="addon-card">
+        <span class="badge badge-green" style="align-self:flex-start;">연동 방식 ②</span>
+        <div class="addon-title" style="font-size:17px;">커스텀 파이프라인</div>
+        <div class="addon-desc" style="font-size:14px;">수집 소스·분류 기준·저장 구조를 고객사 요구에 맞춰 전면 재구성. 단계별 독립 배포 및 재처리 가능.</div>
+        <div style="background:var(--gray-50);border:1px solid var(--gray-100);border-radius:10px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:4px;">
+          <div style="text-align:center;flex:1;">
+            <div style="font-size:13px;font-weight:700;color:var(--navy);">고객사 소스 정의</div>
+            <div style="font-size:11px;color:var(--gray-500);margin-top:3px;">커스텀 수집 대상</div>
+          </div>
+<div style="color:var(--green);font-size:18px;flex-shrink:0;font-weight:700;">→</div>
+<div style="text-align:center;flex:1;">
+            <div style="font-size:13px;font-weight:700;color:var(--navy);">파이프라인 재구성</div>
+            <div style="font-size:11px;color:var(--gray-500);margin-top:3px;">단계별 독립 배포</div>
+          </div>
+<div style="color:var(--green);font-size:18px;flex-shrink:0;font-weight:700;">→</div>
+<div style="text-align:center;flex:1;">
+            <div style="font-size:13px;font-weight:700;color:var(--navy);">임베딩·분류 처리</div>
+            <div style="font-size:11px;color:var(--gray-500);margin-top:3px;">로컬 AI 모델</div>
+          </div>
+<div style="color:var(--green);font-size:18px;flex-shrink:0;font-weight:700;">→</div>
+<div style="text-align:center;flex:1;">
+            <div style="font-size:13px;font-weight:700;color:var(--navy);">구조화 DB 저장</div>
+            <div style="font-size:11px;color:var(--gray-500);margin-top:3px;">벡터 자산 축적</div>
+          </div>
+<div style="color:var(--green);font-size:18px;flex-shrink:0;font-weight:700;">→</div>
+<div style="text-align:center;flex:1;">
+            <div style="font-size:13px;font-weight:700;color:var(--navy);">RAG·추천 확장</div>
+            <div style="font-size:11px;color:var(--gray-500);margin-top:3px;">추후 연계</div>
+          </div>
+        </div>
+      </div>
+      <div class="addon-card">
+        <span class="badge badge-orange" style="align-self:flex-start;">중소기업 적용 예시 ① 예비창업자</span>
+        <div class="addon-title" style="font-size:17px;">창업 초기 지원사업 탐색</div>
+        <div style="background:#FFF7ED;border:1px solid #FED7AA;border-radius:10px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:4px;">
+          <div style="text-align:center;flex:1;">
+            <div style="font-size:13px;font-weight:700;color:var(--navy);">예비창업자 가입</div>
+            <div style="font-size:11px;color:var(--gray-500);margin-top:3px;">업종·관심사 입력</div>
+          </div>
+<div style="color:var(--orange);font-size:18px;flex-shrink:0;font-weight:700;">→</div>
+<div style="text-align:center;flex:1;">
+            <div style="font-size:13px;font-weight:700;color:var(--navy);">AI 지원사업 탐색</div>
+            <div style="font-size:11px;color:var(--gray-500);margin-top:3px;">창업 초기 맞춤</div>
+          </div>
+<div style="color:var(--orange);font-size:18px;flex-shrink:0;font-weight:700;">→</div>
+<div style="text-align:center;flex:1;">
+            <div style="font-size:13px;font-weight:700;color:var(--navy);">마감 알림 수신</div>
+            <div style="font-size:11px;color:var(--gray-500);margin-top:3px;">D-3 자동 알림</div>
+          </div>
+<div style="color:var(--orange);font-size:18px;flex-shrink:0;font-weight:700;">→</div>
+<div style="text-align:center;flex:1;">
+            <div style="font-size:13px;font-weight:700;color:var(--navy);">공고 상세 확인</div>
+            <div style="font-size:11px;color:var(--gray-500);margin-top:3px;">원문 링크 연결</div>
+          </div>
+<div style="color:var(--orange);font-size:18px;flex-shrink:0;font-weight:700;">→</div>
+<div style="text-align:center;flex:1;">
+            <div style="font-size:13px;font-weight:700;color:var(--navy);">신청·준비</div>
+            <div style="font-size:11px;color:var(--gray-500);margin-top:3px;">실질 지원 연결</div>
+          </div>
+        </div>
+      </div>
+      <div class="addon-card">
+        <span class="badge badge-sky" style="align-self:flex-start;">중소기업 적용 예시 ② 스타트업</span>
+        <div class="addon-title" style="font-size:17px;">성장단계별 투자·R&D 연계</div>
+        <div style="background:#F5F3FF;border:1px solid #DDD6FE;border-radius:10px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:4px;">
+          <div style="text-align:center;flex:1;">
+            <div style="font-size:13px;font-weight:700;color:var(--navy);">스타트업 프로필</div>
+            <div style="font-size:11px;color:var(--gray-500);margin-top:3px;">성장단계·지역 설정</div>
+          </div>
+<div style="color:#8B5CF6;font-size:18px;flex-shrink:0;font-weight:700;">→</div>
+<div style="text-align:center;flex:1;">
+            <div style="font-size:13px;font-weight:700;color:var(--navy);">투자·R&D 공고 추천</div>
+            <div style="font-size:11px;color:var(--gray-500);margin-top:3px;">AI 매칭 점수</div>
+          </div>
+<div style="color:#8B5CF6;font-size:18px;flex-shrink:0;font-weight:700;">→</div>
+<div style="text-align:center;flex:1;">
+            <div style="font-size:13px;font-weight:700;color:var(--navy);">뉴스 정책 동향</div>
+            <div style="font-size:11px;color:var(--gray-500);margin-top:3px;">업종별 큐레이션</div>
+          </div>
+<div style="color:#8B5CF6;font-size:18px;flex-shrink:0;font-weight:700;">→</div>
+<div style="text-align:center;flex:1;">
+            <div style="font-size:13px;font-weight:700;color:var(--navy);">지원사업 저장</div>
+            <div style="font-size:11px;color:var(--gray-500);margin-top:3px;">관심 목록 관리</div>
+          </div>
+<div style="color:#8B5CF6;font-size:18px;flex-shrink:0;font-weight:700;">→</div>
+<div style="text-align:center;flex:1;">
+            <div style="font-size:13px;font-weight:700;color:var(--navy);">팀 공유·대응</div>
+            <div style="font-size:11px;color:var(--gray-500);margin-top:3px;">경쟁력 강화</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ SLIDE 3: 솔루션 라인업 ══════════ -->
+<div class="slide" id="s3">
+  <div class="topbar">
+    <div class="topbar-left">
+      <img src="https://raw.githubusercontent.com/Luka-Lloris/AIFORUS-CLT/main/assets/logo_kaic_grayscale.png" style="height:36px;object-fit:contain;">
+      <div class="divider-v"></div>
+      <div class="topbar-sub">한국인공지능검증원</div>
+    </div>
+    <div class="slide-title-tag">AIFORUS 솔루션 라인업</div>
+  </div>
+  <div class="body">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+      <div>
+        <div class="sec-label">추가 솔루션</div>
+        <div style="font-size:18px;font-weight:800;color:var(--navy);">상담 내용에 따라 함께 제안 가능한 솔루션</div>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <span class="badge badge-blue">B2B 엔진 제공</span>
+        <span class="badge badge-sky">SaaS 연계 가능</span>
+        <span class="badge badge-green">API 연동</span>
+      </div>
+    </div>
+    <div class="lineup-grid">
+      <!-- GIX -->
+      <div class="lineup-card lc-gix" onclick="openModal('GIX')">
+        <div>
+          <div class="lineup-name">GIX</div>
+          <div class="lineup-fullname">Recruitment Intelligence<br>& Matching Engine</div>
+        </div>
+        <div style="height:120px;display:flex;align-items:center;justify-content:center;background:#ffffff;border-radius:8px;"><img src="https://raw.githubusercontent.com/Luka-Lloris/AIFORUS-CLT/main/assets/logo_gix.png" style="height:70px;object-fit:contain;"></div>
+        <div class="lineup-desc">AI 기반 채용공고 ↔ 이력서 정밀 매칭 엔진. 역량 단위 벡터화 + 필수/우대 가중치 스코어링. 다단계 매칭으로 대량 지원자 환경 대응.</div>
+        <div class="lineup-targets">
+          <span class="lt">채용 플랫폼</span>
+          <span class="lt">HR 공공기관</span>
+          <span class="lt">중소기업 인사팀</span>
+        </div>
+        <div class="lineup-metric">
+          <div class="metric-row">
+            <div class="metric-label">매칭 구조</div>
+            <div class="metric-val">3단계 (벡터→역량→가중합산)</div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">공정성</div>
+            <div class="metric-val">편향 점검 · 설명가능성 확보</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIS -->
+      <div class="lineup-card lc-vis" onclick="openModal('VIS')">
+        <div>
+          <div class="lineup-name">VIS</div>
+          <div class="lineup-fullname">Visual Intelligence<br>& Structured Insight Engine</div>
+        </div>
+        <div style="height:80px;display:flex;align-items:center;justify-content:center;border-radius:8px;overflow:hidden;background:#ffffff;"><img src="https://raw.githubusercontent.com/Luka-Lloris/AIFORUS-CLT/main/assets/logo_vis.png" style="height:70px;object-fit:contain;"></div>
+        <div class="lineup-desc">공정 이미지에서 결함을 실시간 탐지·세그멘테이션·분류. YOLOv8 기반. 객체 단위 위치·면적·유형 정량화. 장기 불량 패턴 분석 가능.</div>
+        <div class="lineup-targets">
+          <span class="lt">제조업</span>
+          <span class="lt">품질관리 기관</span>
+          <span class="lt">스마트팩토리</span>
+        </div>
+        <div class="lineup-metric">
+          <div class="metric-row">
+            <div class="metric-label">mAP@50</div>
+            <div class="metric-val">95.8%</div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">추론 속도</div>
+            <div class="metric-val">18ms (RTX 4090 기준)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AID -->
+      <div class="lineup-card lc-aid" onclick="openModal('AID')">
+        <div>
+          <div class="lineup-name">AID</div>
+          <div class="lineup-fullname">AI Infectious<br>& Allergy Detection System</div>
+        </div>
+        <div style="height:80px;display:flex;align-items:center;justify-content:center;border-radius:8px;overflow:hidden;background:#ffffff;"><img src="https://raw.githubusercontent.com/Luka-Lloris/AIFORUS-CLT/main/assets/logo_aid.png" style="height:70px;object-fit:contain;"></div>
+        <div class="lineup-desc">기상·보건 통계·알레르기 진료 통계를 통합 분석해 지역 단위 감염·알레르기 위험도 예측. 7일 예측 + 급등 조기 감지.</div>
+        <div class="lineup-targets">
+          <span class="lt">보건·복지 기관</span>
+          <span class="lt">지자체</span>
+          <span class="lt">공중보건 부서</span>
+        </div>
+        <div class="lineup-metric">
+          <div class="metric-row">
+            <div class="metric-label">AUROC</div>
+            <div class="metric-val">0.92</div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">7일 예측 정확도</div>
+            <div class="metric-val">87.6%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- OOT -->
+      <div class="lineup-card lc-oot" onclick="openModal('OOT')">
+        <div>
+          <div class="lineup-name">OOT</div>
+          <div class="lineup-fullname">Optimal Outfit<br>& Trend-anomaly Detector</div>
+        </div>
+        <div style="height:80px;display:flex;align-items:center;justify-content:center;border-radius:8px;overflow:hidden;background:#ffffff;"><img src="https://raw.githubusercontent.com/Luka-Lloris/AIFORUS-CLT/main/assets/logo_oot.png" style="height:70px;object-fit:contain;"></div>
+        <div class="lineup-desc">SNS 이미지·텍스트 기반 패션 트렌드 예측 및 급등 감지. 멀티모달 임베딩 + 시계열 모델링. 국가·지역별 트렌드 변화 예측.</div>
+        <div class="lineup-targets">
+          <span class="lt">의류·패션 제조</span>
+          <span class="lt">유통·소상공인</span>
+          <span class="lt">트렌드 분석 기관</span>
+        </div>
+        <div class="lineup-metric">
+          <div class="metric-row">
+            <div class="metric-label">스타일 분류</div>
+            <div class="metric-val">89.7%</div>
+          </div>
+          <div class="metric-row">
+            <div class="metric-label">급등 감지 Precision</div>
+            <div class="metric-val">91.2%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ SLIDE 4: 상담 입력 ══════════ -->
+<div class="slide" id="s4">
+  <div class="topbar">
+    <div class="topbar-left">
+      <img src="https://raw.githubusercontent.com/Luka-Lloris/AIFORUS-CLT/main/assets/logo_kaic_grayscale.png" style="height:36px;object-fit:contain;">
+      <div class="divider-v"></div>
+      <div class="topbar-sub">한국인공지능검증원</div>
+    </div>
+    <div class="slide-title-tag">상담 기록 입력</div>
+  </div>
+  <div class="body">
+    <!-- FORM -->
+    <div class="form-area">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px;">
+        <div>
+          <div class="form-title">상담 내용 기록</div>
+          <div style="font-size:13px;color:var(--gray-500);">입력 후 저장하면 엑셀 파일에 자동 누적됩니다.</div>
+        </div>
+        <a href="https://luka-lloris.github.io/KAIC-willkommen/" target="_blank"
+           style="flex-shrink:0;display:flex;align-items:center;gap:10px;background:var(--navy);border:2px solid var(--accent);color:var(--white);font-family:'Noto Sans KR',sans-serif;font-size:16px;font-weight:700;padding:14px 24px;border-radius:12px;text-decoration:none;transition:all .2s;white-space:nowrap;"
+           onmouseover="this.style.background='var(--accent)';this.style.color='var(--navy)'"
+           onmouseout="this.style.background='var(--navy)';this.style.color='var(--white)'">
+          🎙 상담 녹음하기
+        </a>
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">기관 / 기업명 <span>*</span></label>
+          <input class="form-input" id="f-org" type="text" placeholder="예: 한국도로공사">
+        </div>
+        <div class="form-group">
+          <label class="form-label">담당자명 <span>*</span></label>
+          <input class="form-input" id="f-name" type="text" placeholder="예: 홍길동">
+        </div>
+        <div class="form-group">
+          <label class="form-label">전화번호</label>
+          <input class="form-input" id="f-tel" type="text" placeholder="예: 010-1234-5678">
+        </div>
+        <div class="form-group">
+          <label class="form-label">이메일</label>
+          <input class="form-input" id="f-email" type="email" placeholder="예: hong@example.com">
+        </div>
+
+        <div class="form-group full">
+          <label class="form-label">관심 서비스 <span>*</span></label>
+          <div class="service-check-grid">
+            <label class="svc-check"><input type="checkbox" name="svc" value="CLT+"><div class="svc-check-box">✓</div><span class="svc-check-label">CLT+ (지원사업 추천)</span></label>
+            <label class="svc-check"><input type="checkbox" name="svc" value="CLT-Engine"><div class="svc-check-box">✓</div><span class="svc-check-label">CLT 엔진 (API 연동)</span></label>
+            <label class="svc-check"><input type="checkbox" name="svc" value="GIX"><div class="svc-check-box">✓</div><span class="svc-check-label">GIX (채용 매칭)</span></label>
+            <label class="svc-check"><input type="checkbox" name="svc" value="VIS"><div class="svc-check-box">✓</div><span class="svc-check-label">VIS (이미지 결함 탐지)</span></label>
+            <label class="svc-check"><input type="checkbox" name="svc" value="AID"><div class="svc-check-box">✓</div><span class="svc-check-label">AID (위험도 예측)</span></label>
+            <label class="svc-check"><input type="checkbox" name="svc" value="OOT"><div class="svc-check-box">✓</div><span class="svc-check-label">OOT (트렌드 감지)</span></label>
+            <label class="svc-check"><input type="checkbox" name="svc" value="시험검증"><div class="svc-check-box">✓</div><span class="svc-check-label">AI 시험·검증</span></label>
+            <label class="svc-check"><input type="checkbox" name="svc" value="컨설팅"><div class="svc-check-box">✓</div><span class="svc-check-label">AI 컨설팅</span></label>
+            <label class="svc-check"><input type="checkbox" name="svc" value="기타"><div class="svc-check-box">✓</div><span class="svc-check-label">기타</span></label>
+          </div>
+        </div>
+
+        <div class="form-group full">
+          <label class="form-label">상담 키워드</label>
+          <div class="keyword-wrap" id="kw-wrap" onclick="document.getElementById('kw-input').focus()">
+            <input class="kw-input" id="kw-input" placeholder="키워드 입력 후 Enter" onkeydown="addKw(event)">
+          </div>
+        </div>
+
+        <div class="form-group full">
+          <label class="form-label">상세 상담 내용</label>
+          <textarea class="form-textarea" id="f-detail" placeholder="상담 주요 내용, 고객 니즈, 후속 조치 등을 자유롭게 입력하세요."></textarea>
+        </div>
+      </div>
+
+      <button class="save-btn" id="save-btn" onclick="saveRecord()">
+        💾 저장 (엑셀 자동 누적)
+      </button>
+    </div>
+
+    <!-- SIDE -->
+    <div class="side-panel">
+      <div class="side-card">
+        <div class="side-card-title">📁 저장 경로</div>
+        <div class="path-display">상담 저장 시 즉시 엑셀 다운로드<br>하루 끝나면 전체 다운로드 권장</div>
+        <div style="font-size:11px;color:var(--red);font-weight:600;margin-top:8px;line-height:1.5;">⚠ 창을 닫기 전 반드시 전체 다운로드!</div>
+      </div>
+
+      <div class="side-card" style="flex:1;overflow:hidden;display:flex;flex-direction:column;">
+        <div class="side-card-title">📋 오늘 상담 기록 <span id="record-count" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gray-500);font-weight:400;">0건</span></div>
+        <div id="record-list" style="flex:1;overflow-y:auto;">
+          <div style="text-align:center;padding:24px 0;color:var(--gray-300);font-size:13px;">아직 기록이 없습니다.</div>
+        </div>
+      </div>
+
+      <div class="side-card">
+        <div class="side-card-title">📥 JSON 백업 다운로드</div>
+        <button onclick="downloadXLSX(true)" style="width:100%;background:var(--navy);border:none;border-radius:8px;padding:10px;font-family:'Noto Sans KR',sans-serif;font-size:13px;font-weight:700;color:var(--white);cursor:pointer;">
+          📥 전체 기록 엑셀 다운로드
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── MODAL ── -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal-box" id="modal-box">
+    <button class="modal-close" onclick="closeModalDirect()">×</button>
+    <div class="modal-tag" id="m-tag"></div>
+    <div class="modal-name" id="m-name"></div>
+    <div class="modal-fullname" id="m-fullname"></div>
+    <div class="modal-desc" id="m-desc"></div>
+    <div class="modal-section">
+      <div class="modal-section-title">성능 지표</div>
+      <div class="modal-kv" id="m-metrics"></div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">적합 대상</div>
+      <div class="modal-targets" id="m-targets"></div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">기술 구조</div>
+      <div class="modal-kv" id="m-tech"></div>
+    </div>
+  </div>
+</div>
+</div><!-- /slides -->
+</div><!-- /scaler -->
+
+<script>
+
+// ── MODAL DATA ──
+const MODAL_DATA = {
+  GIX: {
+    color: '#3B82F6',
+    badge: 'badge-blue',
+    name: 'GIX',
+    fullname: 'Recruitment Intelligence & Matching Engine',
+    desc: 'AI 기반 채용공고 ↔ 이력서 정밀 매칭 엔진. 단순 키워드 일치가 아닌 역량 단위 벡터화와 필수/우대 가중치 스코어링으로 정밀 적합도를 산출합니다. 대량 지원자 환경에서 1차 필터링 → 역량 정렬 → 가중 합산 3단계로 효율적 후보 압축이 가능합니다.',
+    metrics: [
+      ['매칭 구조', '3단계 (벡터 유사도 → 역량 세부 정렬 → 가중 합산)'],
+      ['임베딩 방식', 'Sentence-BERT 계열, 768차원 dense vector'],
+      ['가중치 항목', '필수 역량 충족 여부 · 경력 적합도 · 프로젝트 유사도'],
+      ['공정성', '민감 정보 비사용 · 간접 편향 점검 · 점수 설명가능성 확보'],
+    ],
+    targets: ['채용 플랫폼', 'HR 담당 공공기관', '중소기업 인사팀', '헤드헌팅 서비스'],
+    tech: [
+      ['임베딩', 'Transformer 기반 Sentence-BERT, 역량 단위 개별 벡터'],
+      ['유사도', 'Cosine Similarity + 가중치 합산'],
+      ['출력', '0~100 스케일 매칭 점수 + 항목별 세부 기여도'],
+      ['연동', 'REST API / 기존 채용 시스템 연동 가능'],
+    ],
+  },
+  VIS: {
+    color: '#10B981',
+    badge: 'badge-green',
+    name: 'VIS',
+    fullname: 'Visual Intelligence & Structured Insight Engine',
+    desc: 'YOLOv8 기반 공정 이미지 결함 탐지·세그멘테이션·분류 엔진. 단순 이미지 판독이 아니라 탐지 → 세그멘테이션 → 분류 → 이상 판단의 전주기 자동화 파이프라인입니다. 객체 단위로 결함 위치·면적·유형을 정량화하여 공정 ID·시간 정보와 연계 저장, 장기 불량 패턴 분석이 가능합니다.',
+    metrics: [
+      ['mAP@50', '95.8%'],
+      ['Precision', '94.9%'],
+      ['Recall', '93.8%'],
+      ['세그멘테이션 mAP@50-95', '91.6%'],
+      ['F1 Score (분류)', '94.3%'],
+      ['평균 추론 속도', '18ms (RTX 4090 기준)'],
+    ],
+    targets: ['제조업', '품질관리 공공기관', '스마트팩토리', '반도체·디스플레이'],
+    tech: [
+      ['모델', 'YOLOv8 (Detection + Segmentation)'],
+      ['처리', '다중 모델 병렬 처리, GPU 배치 지원'],
+      ['출력', '객체별 위치·면적·결함 유형 구조화 저장'],
+      ['확장', '공정 단위 병렬 이미지 처리, Vector DB 연계'],
+    ],
+  },
+  AID: {
+    color: '#8B5CF6',
+    badge: 'badge-sky',
+    name: 'AID',
+    fullname: 'AI Infectious & Allergy Detection System',
+    desc: '기상 데이터, 지역 보건 통계, 알레르기 진료 통계, 이벤트 발생 데이터를 통합 분석하여 지역 단위 감염성 질환 및 알레르기 위험도를 예측하는 AI 기반 다변량 시계열 분석 엔진. 단기 변동과 장기 추세를 분리 해석하고, 예측값 대비 편차 기반 이상 급등을 조기 감지합니다.',
+    metrics: [
+      ['AUROC', '0.92'],
+      ['Precision', '89.4%'],
+      ['F1-score', '90.1%'],
+      ['7일 위험도 예측 정확도', '87.6%'],
+    ],
+    targets: ['보건·복지 기관', '지자체', '공중보건 담당 부서', '질병관리청 산하 기관'],
+    tech: [
+      ['분석 구조', '다변량 통합 — 기상·보건·알레르기·이벤트 데이터'],
+      ['모델', '단기 예측 + 시계열 추세 분리 운용'],
+      ['출력', 'Risk Index (지역 단위 비교 가능한 정책 대응 지표)'],
+      ['이상 감지', '임계치 기반 급등 판정 + 조기 경보'],
+    ],
+  },
+  OOT: {
+    color: '#F59E0B',
+    badge: 'badge-orange',
+    name: 'OOT',
+    fullname: 'Optimal Outfit & Trend-anomaly Detector',
+    desc: 'SNS 기반 공개 게시물에서 이미지·캡션·해시태그·반응 메타데이터를 자동 수집하고, 멀티모달 임베딩 기반 트렌드 지표를 구성합니다. 시계열 모델링으로 국가·지역별 패션 트렌드 변화를 예측하고, 트렌드 이상 급등(Trend Anomaly)을 조기 감지합니다.',
+    metrics: [
+      ['스타일 분류 정확도', '89.7%'],
+      ['이미지-텍스트 매칭', '92.4%'],
+      ['트렌드 예측 RMSE', '6.9%'],
+      ['급등 감지 Precision', '91.2%'],
+      ['급등 감지 Recall', '88.5%'],
+    ],
+    targets: ['의류·패션 제조', '유통·소상공인', '트렌드 분석 기관', '패션 플랫폼'],
+    tech: [
+      ['임베딩', 'Transformer 기반 멀티모달 (이미지 + 텍스트 인코더 분리)'],
+      ['트렌드 모델', '스타일 단위 집계 → 시계열 지표 변환'],
+      ['급등 감지', '잔차 기반 편차 분석 + 임계치 판정'],
+      ['출력', '구조화 저장 + Vector DB 연계, RAG 확장 가능'],
+    ],
+  },
+};
+
+function openModal(key) {
+  const d = MODAL_DATA[key];
+  if (!d) return;
+
+  document.getElementById('m-tag').innerHTML = `<span class="badge ${d.badge}">${d.name}</span>`;
+  document.getElementById('m-name').textContent = d.name;
+  document.getElementById('m-fullname').textContent = d.fullname;
+  document.getElementById('m-desc').textContent = d.desc;
+
+  document.getElementById('m-metrics').innerHTML = d.metrics.map(([k,v]) =>
+    `<div class="modal-kv-row"><div class="modal-kv-key">${k}</div><div class="modal-kv-val">${v}</div></div>`
+  ).join('');
+
+  document.getElementById('m-targets').innerHTML = d.targets.map(t =>
+    `<span class="modal-target">${t}</span>`
+  ).join('');
+
+  document.getElementById('m-tech').innerHTML = d.tech.map(([k,v]) =>
+    `<div class="modal-kv-row"><div class="modal-kv-key">${k}</div><div class="modal-kv-val">${v}</div></div>`
+  ).join('');
+
+  // 상단 컬러 바
+  document.getElementById('modal-box').style.borderTop = `4px solid ${d.color}`;
+
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModalDirect();
+}
+function closeModalDirect() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModalDirect(); });
+
+// ── SCALER ──
+function scale() {
+  const sw = 1920, sh = 1080;
+  const s = Math.min(window.innerWidth / sw, window.innerHeight / sh);
+  document.getElementById('scaler').style.transform = `scale(${s})`;
+  // nav 위치 보정
+  const nav = document.getElementById('nav');
+  nav.style.bottom = (28 * s) + 'px';
+}
+window.addEventListener('resize', scale);
+scale();
+
+// ── SLIDES ──
+const slides = document.querySelectorAll('.slide');
+const dotsEl = document.getElementById('dots');
+let cur = 0;
+
+slides.forEach((_, i) => {
+  const d = document.createElement('div');
+  d.className = 'dot' + (i === 0 ? ' on' : '');
+  d.onclick = () => goTo(i);
+  dotsEl.appendChild(d);
+});
+
+function goTo(n) {
+  slides[cur].classList.remove('active');
+  dotsEl.children[cur].classList.remove('on');
+  cur = (n + slides.length) % slides.length;
+  slides[cur].classList.add('active');
+  dotsEl.children[cur].classList.add('on');
+  document.getElementById('nav-label').textContent = `${cur + 1} / ${slides.length}`;
+}
+function go(d) { goTo(cur + d); }
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') go(1);
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') go(-1);
+});
+
+// ── KEYWORDS ──
+const kwWrap = document.getElementById('kw-wrap');
+function addKw(e) {
+  if (e.key !== 'Enter') return;
+  const inp = document.getElementById('kw-input');
+  const v = inp.value.trim();
+  if (!v) return;
+  const chip = document.createElement('div');
+  chip.className = 'kw-chip';
+  chip.innerHTML = `${v} <span class="kw-x" onclick="this.parentElement.remove()">×</span>`;
+  kwWrap.insertBefore(chip, inp);
+  inp.value = '';
+}
+
+// ── RECORDS ──
+const records = [];
+
+function getKeywords() {
+  return [...kwWrap.querySelectorAll('.kw-chip')]
+    .map(c => c.textContent.replace('×', '').trim());
+}
+function getServices() {
+  return [...document.querySelectorAll('input[name=svc]:checked')]
+    .map(c => c.value);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function resetForm() {
+  ['f-org','f-name','f-tel','f-email','f-detail'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.querySelectorAll('input[name=svc]').forEach(c => c.checked = false);
+  document.getElementById('kw-input').value = '';
+  kwWrap.querySelectorAll('.kw-chip').forEach(c => c.remove());
+}
+
+// ── SheetJS 동적 로드 ──
+(function loadSheetJS() {
+  const s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+  document.head.appendChild(s);
+})();
+
+const COL_KR  = ['저장시각','기관/기업명','담당자','전화번호','이메일','관심서비스','상담키워드','상세내용'];
+const COL_KEY = ['timestamp','org','name','tel','email','services','keywords','detail'];
+
+function saveRecord() {
+  const org  = document.getElementById('f-org').value.trim();
+  const name = document.getElementById('f-name').value.trim();
+  if (!org || !name) { showToast('⚠ 기관명과 담당자명은 필수입니다.'); return; }
+
+  const rec = {
+    timestamp: new Date().toLocaleString('ko-KR'),
+    org,
+    name,
+    tel:      document.getElementById('f-tel').value.trim(),
+    email:    document.getElementById('f-email').value.trim(),
+    services: getServices().join(', '),
+    keywords: getKeywords().join(', '),
+    detail:   document.getElementById('f-detail').value.trim(),
+  };
+  records.push(rec);
+  renderRecords();
+
+  // 저장 즉시 엑셀 다운로드
+  downloadXLSX(false);
+  showToast('✅ 저장 완료 — 엑셀 파일을 확인하세요.');
+  resetForm();
+}
+
+function downloadXLSX(manual = true) {
+  if (!window.XLSX) { showToast('⚠ SheetJS 로딩 중입니다. 잠시 후 다시 시도하세요.'); return; }
+  if (records.length === 0) { showToast('저장된 기록이 없습니다.'); return; }
+
+  const wsData = [COL_KR, ...records.map(r => COL_KEY.map(k => r[k] || ''))];
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  // 열 너비
+  ws['!cols'] = [20,24,14,18,28,30,30,60].map(w => ({ wch: w }));
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '상담기록');
+
+  const date = new Date().toLocaleDateString('ko-KR').replace(/\. /g,'-').replace('.','');
+  XLSX.writeFile(wb, `KAIC_상담기록_${date}.xlsx`);
+
+  if (manual) showToast('📥 엑셀 다운로드 완료');
+}
+
+function renderRecords() {
+  const list = document.getElementById('record-list');
+  document.getElementById('record-count').textContent = records.length + '건';
+  if (records.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:24px 0;color:var(--gray-300);font-size:13px;">아직 기록이 없습니다.</div>';
+    return;
+  }
+  list.innerHTML = records.slice().reverse().map(r => `
+    <div class="record-item">
+      <div>
+        <div class="record-org">${r.org}</div>
+        <div class="record-svc">${r.services || '—'}</div>
+        <div class="record-time">${r.timestamp}</div>
+      </div>
+    </div>
+  `).join('');
+
+  // 창 닫기 전 경고
+  window.onbeforeunload = () => '상담 기록이 있습니다. 전체 다운로드 후 닫으세요.';
+}
+</script>
+</body>
+</html>
