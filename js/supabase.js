@@ -51,3 +51,18 @@ export async function fetchConsultations() {
   if (!res.ok) throw new Error('기록 조회 실패');
   return res.json();
 }
+
+export async function fetchCltConsultations() {
+  const config = await getConfig();
+  const res = await fetch(
+    `${config.supabase_url}/rest/v1/clt_consultations?select=*&order=created_at.desc`,
+    {
+      headers: {
+        'apikey': config.supabase_anon,
+        'Authorization': `Bearer ${config.supabase_anon}`
+      }
+    }
+  );
+  if (!res.ok) throw new Error('CLT 기록 조회 실패');
+  return res.json();
+}

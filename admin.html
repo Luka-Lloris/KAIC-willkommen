@@ -111,6 +111,12 @@
       <span class="admin-count" id="recordCount"></span>
     </div>
 
+    <div style="display:flex;gap:8px;margin-bottom:20px;">
+      <button class="filter-btn active" id="tab-stt" onclick="switchTab('stt')">🎙 STT 상담 기록</button>
+      <button class="filter-btn" id="tab-clt" onclick="switchTab('clt')">📋 CLT 상담 기록</button>
+    </div>
+
+    <div id="stt-section">
     <div class="filter-bar" id="filterBar">
       <button class="filter-btn active" onclick="setFilter('all', this)">전체</button>
       <button class="filter-btn" onclick="setFilter('verification', this)">시험/검증</button>
@@ -121,6 +127,12 @@
     </div>
 
     <div id="recordList"></div>
+    </div><!-- /stt-section -->
+
+    <div id="clt-section" style="display:none;">
+      <div id="cltList"></div>
+    </div>
+
   </div>
 </div>
 
@@ -130,12 +142,64 @@
 </div>
 
 <script type="module">
-  import { fetchConsultations } from './js/supabase.js';
+  import { fetchConsultations, fetchCltConsultations } from './js/supabase.js';
   import { getConfig } from './js/config.js';
   import { CAT_COLORS } from './js/store.js';
 
   let allRecords = [];
   let currentFilter = 'all';
+
+  let currentTab = 'stt';
+
+  window.switchTab = async (tab) => {
+    currentTab = tab;
+    document.getElementById('tab-stt').classList.toggle('active', tab === 'stt');
+    document.getElementById('tab-clt').classList.toggle('active', tab === 'clt');
+    document.getElementById('stt-section').style.display = tab === 'stt' ? 'block' : 'none';
+    document.getElementById('clt-section').style.display = tab === 'clt' ? 'block' : 'none';
+    if (tab === 'clt' && document.getElementById('cltList').innerHTML === '') {
+      try {
+        const records = await fetchCltConsultations();
+        renderCltRecords(records);
+      } catch(e) {
+        document.getElementById('cltList').innerHTML = `<div class="empty-state"><span class="emoji">❌</span>${e.message}</div>`;
+      }
+    }
+  };
+
+  function renderCltRecords(records) {
+    const list = document.getElementById('cltList');
+    if (records.length === 0) {
+      list.innerHTML = `<div class="empty-state"><span class="emoji">📭</span>CLT 상담 기록이 없습니다.</div>`;
+      return;
+    }
+    list.innerHTML = records.map((r, i) => `
+      <div class="record-card">
+        <div class="record-head" onclick="toggleClt(${i})">
+          <div class="record-meta">
+            <p class="record-name">${escHtml(r.name || '(이름 미입력)')}</p>
+            <p class="record-org">${escHtml(r.org || '')}</p>
+          </div>
+          <span class="record-date">${r.timestamp || ''}</span>
+          <span class="record-toggle" id="ctoggle-${i}">▼</span>
+        </div>
+        <div class="record-body" id="cbody-${i}">
+          <div class="record-visitor">
+            ${r.tel   ? `<span><strong>📞</strong> ${escHtml(r.tel)}</span>` : ''}
+            ${r.email ? `<span><strong>✉️</strong> ${escHtml(r.email)}</span>` : ''}
+            ${r.services ? `<span><strong>🏷</strong> ${escHtml(r.services)}</span>` : ''}
+            ${r.keywords ? `<span><strong>🔑</strong> ${escHtml(r.keywords)}</span>` : ''}
+          </div>
+          ${r.detail ? `<div class="record-transcript">${escHtml(r.detail)}</div>` : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  window.toggleClt = (i) => {
+    document.getElementById(`cbody-${i}`).classList.toggle('open');
+    document.getElementById(`ctoggle-${i}`).classList.toggle('open');
+  };
 
   window.doLogin = async () => {
     const pw = document.getElementById('pwInput').value;
