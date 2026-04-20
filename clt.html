@@ -1301,7 +1301,7 @@
         <div class="addon-desc" style="font-size:18.2px;">현재 운영 중인 포털·인트라넷에 CLT 엔진을 Add-on으로 연결. 기존 DB 스키마 매핑 가능. 외부 AI API 비용 없음.</div>
         <div style="background:var(--gray-50);border:1px solid var(--gray-100);border-radius:10px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:4px;">
           <div style="text-align:center;flex:1;">
-            <div style="font-size:16.9px;font-weight:700;color:var(--navy);">기존 포털 수동 검색</div>
+            <div style="font-size:16.9px;font-weight:700;color:var(--navy);">기존포털 수동검색</div>
             <div style="font-size:14.3px;color:var(--gray-500);margin-top:3px;">매일 반복</div>
           </div>
 <div style="color:var(--blue);font-size:23.4px;flex-shrink:0;font-weight:700;">→</div>
@@ -1397,7 +1397,7 @@
           </div>
 <div style="color:#8B5CF6;font-size:23.4px;flex-shrink:0;font-weight:700;">→</div>
 <div style="text-align:center;flex:1;">
-            <div style="font-size:16.9px;font-weight:700;color:var(--navy);">투자·R&D 공고 추천</div>
+            <div style="font-size:16.9px;font-weight:700;color:var(--navy);">투자·R&D공고 추천</div>
             <div style="font-size:14.3px;color:var(--gray-500);margin-top:3px;">AI 매칭 점수</div>
           </div>
 <div style="color:#8B5CF6;font-size:23.4px;flex-shrink:0;font-weight:700;">→</div>
@@ -1889,7 +1889,7 @@ function resetForm() {
 const COL_KR  = ['저장시각','기관/기업명','담당자','전화번호','이메일','관심서비스','상담키워드','상세내용'];
 const COL_KEY = ['timestamp','org','name','tel','email','services','keywords','detail'];
 
-function saveRecord() {
+async function saveRecord() {
   const org  = document.getElementById('f-org').value.trim();
   const name = document.getElementById('f-name').value.trim();
   if (!org || !name) { showToast('⚠ 기관명과 담당자명은 필수입니다.'); return; }
@@ -1907,9 +1907,25 @@ function saveRecord() {
   records.push(rec);
   renderRecords();
 
-  // 저장 즉시 엑셀 다운로드
-  downloadXLSX(false);
-  showToast('✅ 저장 완료 — 엑셀 파일을 확인하세요.');
+  // Supabase 저장
+  try {
+    const SUPABASE_URL  = 'https://esscuathfwwtibrgudne.supabase.co';
+    const SUPABASE_ANON = 'sb_publishable_Wmf3rYMhcLgcdC2hPYztBg_jiTn09bU';
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/clt_consultations`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_ANON,
+        'Authorization': `Bearer ${SUPABASE_ANON}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(rec)
+    });
+    if (!res.ok) throw new Error(res.status);
+    showToast('✅ 저장 완료');
+  } catch(e) {
+    showToast('⚠ 저장 실패: ' + e.message);
+  }
   resetForm();
 }
 
