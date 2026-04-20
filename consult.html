@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>상담 기록 — KAIC</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="page">
+
+  <header class="page-header">
+    <button class="back-btn" onclick="history.back()">←</button>
+    <span class="page-title">상담 내용 기록</span>
+    <span class="category-badge" id="catBadge"></span>
+  </header>
+
+  <div class="page-body">
+
+    <div class="stt-status">
+      <div class="stt-dot" id="sttDot"></div>
+      <span id="sttStatusText">녹음 준비 완료 — 아래 버튼을 눌러 시작하세요</span>
+    </div>
+
+    <p class="section-title">상담 내용</p>
+    <textarea
+      class="stt-textarea"
+      id="transcript"
+      placeholder="녹음 후 자동으로 텍스트가 입력됩니다. 직접 입력하거나 편집도 가능합니다."
+    ></textarea>
+
+    <div class="stt-controls">
+      <button class="btn btn-danger" id="recBtn" onclick="toggleRec()">
+        <span id="recIcon">⏺</span>
+        <span id="recLabel">녹음 시작</span>
+      </button>
+      <button class="btn btn-ghost" id="convertBtn" onclick="convertSTT()" disabled>
+        🔄 변환
+      </button>
+      <button class="btn btn-ghost" onclick="clearTranscript()">
+        🗑 지우기
+      </button>
+      <button class="btn btn-primary" style="margin-left:auto;" onclick="goNext()">
+        다음 →
+      </button>
+    </div>
+
+    <p style="font-size:0.75rem; color:var(--text-muted); margin-top:12px; line-height:1.6;">
+      ※ 녹음 후 <strong>변환</strong> 버튼을 누르면 Whisper AI가 텍스트로 변환합니다.<br>
+      변환 중에는 잠시 기다려주세요 (30초~1분 내외).
+    </p>
+
+  </div>
+
+</div>
+
+<!-- 로딩 오버레이 -->
+<div class="overlay" id="overlay">
+  <div class="spinner"></div>
+  <p class="overlay-msg" id="overlayMsg">Whisper 모델 로딩 중...</p>
+</div>
+
+<script type="module">
+  import { getSession, setTranscript } from './js/store.js';
+
+  // 카테고리 배지
+  const session = getSession();
+  if (!session.category) { window.location.href = 'index.html'; }
+
+  const catColors = {
+    verification: 'var(--cat-1)',
+    consulting: 'var(--cat-2)',
+    development: 'var(--cat-3)',
+    collaboration: 'var(--cat-4)',
+    etc: 'var(--cat-5)'
+  };
+  const badge = document.getElementById('catBadge');
+  badge.textContent = session.categoryLabel;
+  badge.style.background = catColors[session.category] || 'var(--cat-5)';
+  badge.style.color = '#fff';
+
+  // 기존 transcript 복원
+  const ta = document.getElementById('transcript');
+  if (session.transcript) ta.value = session.transcript;
+
+  // ── 녹음 상태 ──
+  let mediaRecorder = null;
+  let audioChunks = [];
+  let isRecording = false;
+  let audioBlob = null;
+
+  // ── Whisper 파이프라인 (lazy load) ──
+  let pipeline = null;
+  let pipelineLoading = false;
+
+  async function loadWhisper() {
+    if (pipeline) return pipeline;
+    if (pipelineLoading) return null;
+    pipelineLoading = true;
+    showOverlay('Whisper 모델 로딩 중... (최초 1회, 약 145MB)');
+    try {
+      const { pipeline: createPipeline } = await import(
+        'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/transformers.min.js'
+      );
+      pipeline = await createPipeline('automatic-speech-recognition', 'Xenova/whisper-base', {
+        language: 'korean',
+        task: 'transcribe'
+      });
+      hideOverlay();
+      return pipeline;
+    } catch (e) {
+      hideOverlay();
+      alert('Whisper 모델 로딩 실패: ' + e.message);
+      pipelineLoading = false;
+      return null;
+    }
+  }
+
+  // ── 녹음 토글 ──
+  window.toggleRec = async function() {
+    if (!isRecording) {
+      await startRec();
+    } else {
+      stopRec();
+    }
+  };
+
+  async function startRec() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunks = [];
+      mediaRecorder = new MediaRecorder(stream);
+      mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+      mediaRecorder.onstop = () => {
+        audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        stream.getTracks().forEach(t => t.stop());
+        document.getElementById('convertBtn').disabled = false;
+        setStatus('done', '녹음 완료 — 변환 버튼을 눌러주세요');
+      };
+      mediaRecorder.start();
+      isRecording = true;
+      document.getElementById('recIcon').textContent = '⏹';
+      document.getElementById('recLabel').textContent = '녹음 중지';
+      document.getElementById('recBtn').style.background = '#dc2626';
+      document.getElementById('convertBtn').disabled = true;
+      setStatus('recording', '녹음 중...');
+    } catch (e) {
+      alert('마이크 접근 실패: ' + e.message);
+    }
+  }
+
+  function stopRec() {
+    if (mediaRecorder && isRecording) {
+      mediaRecorder.stop();
+      isRecording = false;
+      document.getElementById('recIcon').textContent = '⏺';
+      document.getElementById('recLabel').textContent = '녹음 시작';
+      document.getElementById('recBtn').style.background = '';
+    }
+  }
+
+  // ── STT 변환 ──
+  window.convertSTT = async function() {
+    if (!audioBlob) return;
+    const pipe = await loadWhisper();
+    if (!pipe) return;
+
+    showOverlay('음성 변환 중...');
+    setStatus('processing', '변환 중...');
+
+    try {
+      const arrayBuffer = await audioBlob.arrayBuffer();
+      const audioContext = new AudioContext({ sampleRate: 16000 });
+      const decoded = await audioContext.decodeAudioData(arrayBuffer);
+      const float32 = decoded.getChannelData(0);
+
+      const result = await pipe(float32, {
+        language: 'korean',
+        task: 'transcribe',
+        chunk_length_s: 30,
+        stride_length_s: 5
+      });
+
+      const text = result.text.trim();
+      ta.value = (ta.value ? ta.value + '\n\n' : '') + text;
+      setStatus('done', '변환 완료');
+    } catch (e) {
+      setStatus('', '변환 실패: ' + e.message);
+      alert('변환 중 오류: ' + e.message);
+    } finally {
+      hideOverlay();
+    }
+  };
+
+  window.clearTranscript = function() {
+    if (confirm('입력된 내용을 모두 지울까요?')) ta.value = '';
+  };
+
+  window.goNext = function() {
+    setTranscript(ta.value);
+    window.location.href = 'visitor.html';
+  };
+
+  function setStatus(state, msg) {
+    const dot = document.getElementById('sttDot');
+    dot.className = 'stt-dot' + (state ? ` ${state}` : '');
+    document.getElementById('sttStatusText').textContent = msg;
+  }
+
+  function showOverlay(msg) {
+    document.getElementById('overlayMsg').textContent = msg;
+    document.getElementById('overlay').classList.add('show');
+  }
+
+  function hideOverlay() {
+    document.getElementById('overlay').classList.remove('show');
+  }
+
+  // 페이지 떠날 때 자동 저장
+  window.addEventListener('beforeunload', () => {
+    setTranscript(ta.value);
+  });
+</script>
+
+</body>
+</html>
