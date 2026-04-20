@@ -146,6 +146,11 @@
   function hideLoading() {
     document.getElementById('loadingOverlay').classList.remove('show');
   }
+
+  // 상담 이어가기 진입 시 자동 녹음 시작
+  if (new URLSearchParams(location.search).get('continue') === '1') {
+    setTimeout(() => startRec(), 300);
+  }
 </script>
 
 </body>

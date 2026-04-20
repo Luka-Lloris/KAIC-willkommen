@@ -21,10 +21,8 @@
 
   <div class="review-body">
 
-    <!-- 이전 회차들 (접힘) — JS로 동적 생성 -->
     <div id="prevTranscripts"></div>
 
-    <!-- 최신 회차 (항상 펼쳐짐) -->
     <div class="transcript-latest">
       <p class="transcript-latest-label" id="latestLabel">1회차 상담 내용</p>
       <textarea class="review-textarea" id="latestTextarea" placeholder="변환된 내용이 없습니다. 직접 입력하세요."></textarea>
@@ -37,7 +35,7 @@
     </button>
 
     <div class="bottom-row">
-      <button class="done-btn" onclick="goHome()">✅ 완료 — 새 상담</button>
+      <button class="done-btn" id="doneBtn" onclick="goHome()">✅ 완료 — 새 상담</button>
       <button class="continue-btn" onclick="continueConsult()">🎙 상담 이어가기</button>
     </div>
 
@@ -92,7 +90,7 @@
 </div>
 <div class="loading-overlay" id="sendOverlay">
   <div class="spinner"></div>
-  <p class="loading-msg">메일 발송 중...</p>
+  <p class="loading-msg" id="sendMsg">처리 중...</p>
 </div>
 
 <script type="module">
@@ -102,16 +100,15 @@
     clearSession, CAT_COLORS
   } from './js/store.js';
   import { sendEmail as resendSend } from './js/resend.js';
+  import { saveConsultation } from './js/supabase.js';
 
   const session = getSession();
   if (!session.category) { location.href = 'index.html'; }
 
-  // 배지
   const badge = document.getElementById('catBadge');
   badge.textContent = session.categoryLabel;
   badge.style.background = CAT_COLORS[session.category] || 'var(--cat-5)';
 
-  // 회차 렌더링
   const transcripts = session.transcripts || [];
   const total = transcripts.length;
   const prevContainer = document.getElementById('prevTranscripts');
@@ -126,41 +123,33 @@
       <div class="transcript-header" onclick="toggleBlock(${i})">
         <div class="transcript-header-left">
           <span class="transcript-round-label">${i+1}회차</span>
-          <span class="transcript-preview" id="preview-${i}">${text.slice(0,40)}${text.length>40?'…':''}</span>
+          <span class="transcript-preview">${text.slice(0,40)}${text.length>40?'…':''}</span>
         </div>
         <span class="transcript-toggle" id="toggle-${i}">▼</span>
       </div>
       <div class="transcript-content" id="content-${i}">
-        <textarea class="transcript-textarea" id="ta-${i}" onchange="savePrev(${i}, this.value)">${text}</textarea>
+        <textarea class="transcript-textarea" onchange="savePrev(${i}, this.value)">${text}</textarea>
       </div>
     `;
     prevContainer.appendChild(block);
   });
 
-  // 최신 회차
   if (total > 0) {
     latestLabel.textContent = `${total}회차 상담 내용`;
     latestTextarea.value = transcripts[total - 1] || '';
   }
 
   window.toggleBlock = (i) => {
-    const content = document.getElementById(`content-${i}`);
-    const toggle = document.getElementById(`toggle-${i}`);
-    const isOpen = content.classList.contains('open');
-    content.classList.toggle('open', !isOpen);
-    toggle.classList.toggle('open', !isOpen);
+    document.getElementById(`content-${i}`).classList.toggle('open');
+    document.getElementById(`toggle-${i}`).classList.toggle('open');
   };
 
-  window.savePrev = (i, val) => {
-    updateTranscript(i, val);
-  };
+  window.savePrev = (i, val) => updateTranscript(i, val);
 
-  // 최신 회차 변경 시 저장
   latestTextarea.addEventListener('change', () => {
     updateTranscript(total - 1, latestTextarea.value);
   });
 
-  // 방문자 버튼 상태
   function updateVisitorBtn() {
     const btn = document.getElementById('visitorBtn');
     if (hasVisitor()) {
@@ -174,7 +163,6 @@
   }
   updateVisitorBtn();
 
-  // ── 팝업 ──
   window.openVisitorModal = () => {
     if (hasVisitor()) {
       const v = getSession().visitor;
@@ -214,7 +202,6 @@
     updateVisitorBtn();
   };
 
-  // ── OCR ──
   window.handleCameraInput = async (input) => {
     const file = input.files[0];
     if (!file) return;
@@ -226,10 +213,8 @@
       const worker = await createWorker(['kor','eng']);
       const { data: { text } } = await worker.recognize(file);
       await worker.terminate();
-
       const phone = text.match(/0\d{1,2}[-.\s]?\d{3,4}[-.\s]?\d{4}/);
       const email = text.match(/[\w.-]+@[\w.-]+\.\w+/);
-
       document.getElementById('vOrg').value = '';
       document.getElementById('vName').value = '';
       document.getElementById('vContact').value = phone ? phone[0].replace(/\s/g,'-') : '';
@@ -242,18 +227,18 @@
     }
   };
 
-  // ── 메일 발송 ──
+  // 메일 전송
   window.sendEmail = async () => {
     updateTranscript(total - 1, latestTextarea.value);
     const s = getSession();
-    const v = s.visitor;
     const btn = document.getElementById('sendBtn');
     btn.disabled = true;
+    document.getElementById('sendMsg').textContent = '메일 발송 중...';
     document.getElementById('sendOverlay').classList.add('show');
     try {
-      const subject = `[KAIC 부스 상담] ${s.categoryLabel} — ${v.name || '방문자'} (${s.datetime})`;
+      const subject = `[KAIC 부스 상담] ${s.categoryLabel} — ${s.visitor?.name || '방문자'} (${s.datetime})`;
       await resendSend({ subject, markdown: generateMD(), filename: generateFilename() });
-      showStatus('success', `✅ 발송 완료 → kaic.officer@gmail.com`);
+      showStatus('success', '✅ 메일 발송 완료');
     } catch(e) {
       showStatus('error', `❌ 발송 실패: ${e.message}`);
       btn.disabled = false;
@@ -262,15 +247,28 @@
     }
   };
 
-  // ── 상담 이어가기 ──
-  window.continueConsult = () => {
+  // 완료 — Supabase 저장
+  window.goHome = async () => {
     updateTranscript(total - 1, latestTextarea.value);
-    location.href = 'interview.html';
+    const btn = document.getElementById('doneBtn');
+    btn.disabled = true;
+    document.getElementById('sendMsg').textContent = '저장 중...';
+    document.getElementById('sendOverlay').classList.add('show');
+    try {
+      await saveConsultation(getSession());
+      clearSession();
+      location.href = 'index.html';
+    } catch(e) {
+      showStatus('error', `❌ 저장 실패: ${e.message}`);
+      btn.disabled = false;
+      document.getElementById('sendOverlay').classList.remove('show');
+    }
   };
 
-  window.goHome = () => {
-    clearSession();
-    location.href = 'index.html';
+  // 상담 이어가기
+  window.continueConsult = () => {
+    updateTranscript(total - 1, latestTextarea.value);
+    location.href = 'interview.html?continue=1';
   };
 
   function showStatus(type, msg) {
