@@ -6,85 +6,58 @@
   <meta name="theme-color" content="#0a0a0f">
   <title>KAIC 부스 상담</title>
   <link rel="stylesheet" href="css/style.css">
-  <style>
-    .welcome-header {
-      background: linear-gradient(to bottom, rgba(10,10,15,0.9), transparent);
-      backdrop-filter: blur(4px);
-    }
-    .kaic-logo-text {
-      font-size: 0.95rem;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      color: rgba(255,255,255,0.7);
-    }
-    .welcome-time {
-      margin-left: auto;
-      font-size: 0.78rem;
-      color: rgba(255,255,255,0.35);
-      font-weight: 500;
-    }
-  </style>
 </head>
 <body>
 
 <header class="welcome-header">
-  <span class="kaic-logo-text">KAIC</span>
-  <span class="welcome-time" id="clock"></span>
+  <span class="logo">KAIC</span>
+  <span class="clock" id="clock"></span>
 </header>
 
-<div class="welcome-grid">
-
-  <button class="welcome-btn" onclick="go('verification', '시험/검증')">
-    <span class="btn-icon">🔬</span>
-    <span class="btn-label">시험<br>검증</span>
-    <span class="btn-accent"></span>
+<div class="welcome-wrap">
+  <button class="welcome-btn" onclick="go('verification','시험/검증')">
+    <span class="icon">🔬</span>
+    <span class="label">시험<br>검증</span>
+    <span class="bar"></span>
   </button>
-
-  <button class="welcome-btn" onclick="go('consulting', '컨설팅')">
-    <span class="btn-icon">💼</span>
-    <span class="btn-label">컨설팅</span>
-    <span class="btn-accent"></span>
+  <button class="welcome-btn" onclick="go('consulting','컨설팅')">
+    <span class="icon">💼</span>
+    <span class="label">컨설팅</span>
+    <span class="bar"></span>
   </button>
-
-  <button class="welcome-btn" onclick="go('development', '개발지원')">
-    <span class="btn-icon">⚙️</span>
-    <span class="btn-label">개발<br>지원</span>
-    <span class="btn-accent"></span>
+  <button class="welcome-btn" onclick="go('development','개발지원')">
+    <span class="icon">⚙️</span>
+    <span class="label">개발<br>지원</span>
+    <span class="bar"></span>
   </button>
-
-  <button class="welcome-btn" onclick="go('collaboration', '협업제안')">
-    <span class="btn-icon">🤝</span>
-    <span class="btn-label">협업<br>제안</span>
-    <span class="btn-accent"></span>
+  <button class="welcome-btn" onclick="go('collaboration','협업제안')">
+    <span class="icon">🤝</span>
+    <span class="label">협업<br>제안</span>
+    <span class="bar"></span>
   </button>
-
-  <button class="welcome-btn" onclick="go('etc', '기타')">
-    <span class="btn-icon">📋</span>
-    <span class="btn-label">기타</span>
-    <span class="btn-accent"></span>
+  <button class="welcome-btn" onclick="go('etc','기타')">
+    <span class="icon">📋</span>
+    <span class="label">기타</span>
+    <span class="bar"></span>
   </button>
-
 </div>
 
 <script type="module">
-  import { setCategory, clearSession } from './js/store.js';
+  import { initSession } from './js/store.js';
 
-  clearSession();
-
-  window.go = function(category, label) {
-    setCategory(category, label);
-    window.location.href = 'consult.html';
+  window.go = (cat, label) => {
+    initSession(cat, label);
+    location.href = 'interview.html';
   };
 
-  function updateClock() {
-    const now = new Date();
-    const pad = n => String(n).padStart(2, '0');
+  const tick = () => {
+    const d = new Date();
+    const p = n => String(n).padStart(2,'0');
     document.getElementById('clock').textContent =
-      `${now.getFullYear()}.${pad(now.getMonth()+1)}.${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
-  }
-  updateClock();
-  setInterval(updateClock, 10000);
+      `${d.getFullYear()}.${p(d.getMonth()+1)}.${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+  };
+  tick();
+  setInterval(tick, 10000);
 </script>
-
 </body>
 </html>

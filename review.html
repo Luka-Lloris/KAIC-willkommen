@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>상담 내용 확인 — KAIC</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="page">
+
+  <header class="page-header">
+    <button class="back-btn" onclick="history.back()">←</button>
+    <span class="page-title">상담 내용 확인</span>
+    <button class="visitor-btn" id="visitorBtn" onclick="openVisitorModal()">
+      👤 방문자 정보
+    </button>
+    <span class="cat-badge" id="catBadge"></span>
+  </header>
+
+  <div class="review-body">
+    <textarea class="review-textarea" id="transcript" placeholder="변환된 상담 내용이 여기 표시됩니다. 직접 수정 가능합니다."></textarea>
+    <div class="status-msg" id="statusMsg"></div>
+    <button class="send-btn" id="sendBtn" onclick="sendEmail()">
+      📧 메일로 전송
+    </button>
+    <button class="new-btn" onclick="goHome()">
+      ✅ 완료 — 새 상담 시작
+    </button>
+  </div>
+
+</div>
+
+<!-- ── 방문자 정보 팝업 (1단계: 카메라 / 수동 선택) ── -->
+<div class="modal-bg" id="visitorModal" onclick="closeIfBg(event,'visitorModal')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <p class="modal-title">방문자 정보 입력</p>
+    <div class="modal-row">
+      <button class="modal-choice-btn" onclick="openCamera()">
+        <span>📷</span>
+        <span>명함/명찰 촬영</span>
+      </button>
+      <button class="modal-choice-btn" onclick="openManual()">
+        <span>✏️</span>
+        <span>직접 입력</span>
+      </button>
+    </div>
+    <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handleCameraInput(this)">
+  </div>
+</div>
+
+<!-- ── 수동 입력 팝업 (2단계) ── -->
+<div class="modal-bg" id="manualModal" onclick="closeIfBg(event,'manualModal')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <p class="modal-title">방문자 정보</p>
+
+    <div class="form-group">
+      <label class="form-label">기관 / 기업명</label>
+      <input class="form-input" type="text" id="vOrg" placeholder="한국인공지능검증원">
+    </div>
+    <div class="form-group">
+      <label class="form-label">이름</label>
+      <input class="form-input" type="text" id="vName" placeholder="홍길동">
+    </div>
+    <div class="form-group">
+      <label class="form-label">전화번호</label>
+      <input class="form-input" type="tel" id="vContact" placeholder="010-0000-0000">
+    </div>
+    <div class="form-group">
+      <label class="form-label">이메일</label>
+      <input class="form-input" type="email" id="vEmail" placeholder="example@company.com">
+    </div>
+
+    <button class="modal-confirm-btn" onclick="saveManual()">확인</button>
+  </div>
+</div>
+
+<!-- OCR 로딩 -->
+<div class="loading-overlay" id="ocrOverlay">
+  <div class="spinner"></div>
+  <p class="loading-msg">명함 인식 중...</p>
+</div>
+
+<!-- 메일 발송 로딩 -->
+<div class="loading-overlay" id="sendOverlay">
+  <div class="spinner"></div>
+  <p class="loading-msg">메일 발송 중...</p>
+</div>
+
+<script type="module">
+  import { getSession, setTranscript, setVisitor, hasVisitor, generateMD, generateFilename, clearSession, CAT_COLORS } from './js/store.js';
+  import { sendEmail as resendSend } from './js/resend.js';
+
+  const session = getSession();
+  if (!session.category) { location.href = 'index.html'; }
+
+  // 배지
+  const badge = document.getElementById('catBadge');
+  badge.textContent = session.categoryLabel;
+  badge.style.background = CAT_COLORS[session.category] || 'var(--cat-5)';
+
+  // transcript 표시
+  const ta = document.getElementById('transcript');
+  ta.value = session.transcript || '';
+
+  // 방문자 버튼 상태 업데이트
+  function updateVisitorBtn() {
+    const btn = document.getElementById('visitorBtn');
+    if (hasVisitor()) {
+      const v = getSession().visitor;
+      btn.textContent = `👤 ${v.name || v.org || '정보 입력됨'}`;
+      btn.classList.add('has-data');
+    } else {
+      btn.textContent = '👤 방문자 정보';
+      btn.classList.remove('has-data');
+    }
+  }
+  updateVisitorBtn();
+
+  // ── 팝업 ──
+  window.openVisitorModal = () => {
+    // 기존 데이터 있으면 수동입력 팝업 바로
+    if (hasVisitor()) {
+      const v = getSession().visitor;
+      document.getElementById('vOrg').value = v.org || '';
+      document.getElementById('vName').value = v.name || '';
+      document.getElementById('vContact').value = v.contact || '';
+      document.getElementById('vEmail').value = v.email || '';
+      document.getElementById('manualModal').classList.add('show');
+    } else {
+      document.getElementById('visitorModal').classList.add('show');
+    }
+  };
+
+  window.openCamera = () => {
+    document.getElementById('visitorModal').classList.remove('show');
+    document.getElementById('cameraInput').click();
+  };
+
+  window.openManual = () => {
+    document.getElementById('visitorModal').classList.remove('show');
+    document.getElementById('manualModal').classList.add('show');
+  };
+
+  window.closeIfBg = (e, id) => {
+    if (e.target.classList.contains('modal-bg')) {
+      document.getElementById(id).classList.remove('show');
+    }
+  };
+
+  window.saveManual = () => {
+    setVisitor({
+      org:     document.getElementById('vOrg').value.trim(),
+      name:    document.getElementById('vName').value.trim(),
+      contact: document.getElementById('vContact').value.trim(),
+      email:   document.getElementById('vEmail').value.trim()
+    });
+    document.getElementById('manualModal').classList.remove('show');
+    updateVisitorBtn();
+  };
+
+  // ── OCR ──
+  window.handleCameraInput = async (input) => {
+    const file = input.files[0];
+    if (!file) return;
+
+    document.getElementById('ocrOverlay').classList.add('show');
+    try {
+      const { createWorker } = await import(
+        'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.esm.min.js'
+      );
+      const worker = await createWorker(['kor','eng']);
+      const { data: { text } } = await worker.recognize(file);
+      await worker.terminate();
+
+      // 자동 파싱
+      const phone = text.match(/0\d{1,2}[-.\s]?\d{3,4}[-.\s]?\d{4}/);
+      const email = text.match(/[\w.-]+@[\w.-]+\.\w+/);
+
+      document.getElementById('vOrg').value = '';
+      document.getElementById('vName').value = '';
+      document.getElementById('vContact').value = phone ? phone[0].replace(/\s/g,'-') : '';
+      document.getElementById('vEmail').value = email ? email[0] : '';
+
+      document.getElementById('ocrOverlay').classList.remove('show');
+      document.getElementById('manualModal').classList.add('show');
+    } catch(e) {
+      document.getElementById('ocrOverlay').classList.remove('show');
+      alert('OCR 실패: ' + e.message);
+      document.getElementById('manualModal').classList.add('show');
+    }
+  };
+
+  // ── 메일 발송 ──
+  window.sendEmail = async () => {
+    setTranscript(ta.value);
+    const md = generateMD();
+    const filename = generateFilename();
+    const s = getSession();
+    const v = s.visitor;
+
+    const btn = document.getElementById('sendBtn');
+    btn.disabled = true;
+    document.getElementById('sendOverlay').classList.add('show');
+
+    try {
+      const subject = `[KAIC 부스 상담] ${s.categoryLabel} — ${v.name || '방문자'} (${s.datetime})`;
+      await resendSend({ subject, markdown: md, filename });
+      showStatus('success', `✅ 발송 완료 → kaic.officer@gmail.com`);
+    } catch(e) {
+      showStatus('error', `❌ 발송 실패: ${e.message}`);
+      btn.disabled = false;
+    } finally {
+      document.getElementById('sendOverlay').classList.remove('show');
+    }
+  };
+
+  window.goHome = () => {
+    clearSession();
+    location.href = 'index.html';
+  };
+
+  function showStatus(type, msg) {
+    const el = document.getElementById('statusMsg');
+    el.className = `status-msg show ${type}`;
+    el.textContent = msg;
+  }
+</script>
+
+</body>
+</html>
